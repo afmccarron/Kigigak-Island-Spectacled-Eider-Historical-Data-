@@ -18,6 +18,8 @@ library(dplyr)
 library(here)
 library(tools)
 
+wflow_git_commit(all = TRUE)
+?wflow_git_commit
 #Identifying file types, file names, and columns
 
 #Identifying all file types within folders Eider1994-Eider2005
@@ -269,15 +271,15 @@ markdata_comparison_results <- lapply(markdata_dbf_files_eider1994.2005, compare
 
 # List all .dbf files from those folders, including only files that have 'resight' in the name
 resight_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "resight" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("resight", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'markdata' in the name
+# View the filtered list of .dbf files with 'resight' in the name
 print(resight_dbf_files_eider1994.2005)
 
-#Comparing columns of the markdata files to the markdata reference dataframe
+#Comparing columns of the resight data files to the resight reference dataframe
 
 # Function to compare column names of a .dbf file with the reference data frame
 compare_columns <- function(dbf_file, resight_reference_df) {
@@ -300,7 +302,7 @@ compare_columns <- function(dbf_file, resight_reference_df) {
   )
 }
 
-# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+# Apply the comparison function to all filtered .dbf files with 'resight' in the name
 resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_columns, resight_reference_df = resight_reference_df)
 #years 1994-2000 include at least all the fields specified in the reference data frame
 #years 2001-2005 are missing one field that is included in the reference data frame: "TARSUS"
@@ -311,15 +313,15 @@ resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_c
 
 # List all .dbf files from those folders, including only files that have 'visit' in the name
 visit_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "visit" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("visit", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'markdata' in the name
+# View the filtered list of .dbf files with 'visit' in the name
 print(visit_dbf_files_eider1994.2005)
 
-#Comparing columns of the markdata files to the markdata reference dataframe
+#Comparing columns of the visit files to the visit reference dataframe
 
 # Function to compare column names of a .dbf file with the reference data frame
 compare_columns <- function(dbf_file, visit_reference_df) {
@@ -342,7 +344,7 @@ compare_columns <- function(dbf_file, visit_reference_df) {
   )
 }
 
-# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+# Apply the comparison function to all filtered .dbf files with 'visit' in the name
 visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_columns, visit_reference_df = visit_reference_df)
 #years 1994-2005 include at least all of the fields specified in the reference data frame
 
@@ -352,7 +354,7 @@ visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_colum
 
 # List all .dbf files from those folders, including only files that have 'egg' in the name
 egg_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "visit" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("egg", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)

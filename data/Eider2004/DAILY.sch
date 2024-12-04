@@ -1,0 +1,15 @@
+[DAILY]
+Filetype=Fixed
+CharSet=DB437US0
+Field1=NEST_NO,Char,06,00,00
+Field2=SPECIES,Char,04,00,06
+Field3=PHOTO,Number,03,00,10
+Field4=EASTING,Float,13,00,13
+Field5=NORTHING,Float,13,00,26
+Field6=STATUS,Char,10,00,39
+Field7=NO_EGGS,Number,02,00,49
+Field8=FLOAT1,Char,02,00,51
+Field9=FLOAT2,Char,02,00,53
+Field10=CANDLE1,Char,03,00,55
+Field11=CANDLE2,Char,03,00,58
+Field12=NEXTVISIT,Date,08,00,61

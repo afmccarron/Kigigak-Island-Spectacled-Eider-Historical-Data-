@@ -3,7 +3,9 @@
 #' Contents:
 #'  - Identifying all file types in folders from Eider1994-Eider2005
 #'  - Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
-#'  - etc...
+#'  - Creating reference data frame for each of the tables to identify each of the required column names
+#'  - Comparing the data collected in each year to the reference data frames, identifying the differences in column names
+#'  -
 #'  Author: [Ali McCarron]
 #'
 #'######################################################################################
@@ -167,11 +169,11 @@ colnames(visit_reference_df) <- expected_columns_visit
 #Reference data frame for "egg" data
 
 # Define the expected column names (reference)
-expected_columns_Egg <- c("NEST_NO", "SPECIES", "OBS", "EGGNO", "LENGTH", "WIDTH", "LINK", "WEBTAG", "TAGDATE")
+expected_columns_egg <- c("NEST_NO", "SPECIES", "OBS", "EGGNO", "LENGTH", "WIDTH", "LINK", "WEBTAG", "TAGDATE")
 
 # Create an empty data frame with these columns
-Egg_reference_df <- data.frame(matrix(ncol = length(expected_columns_Egg), nrow = 0))
-colnames(Egg_reference_df) <- expected_columns_Egg
+egg_reference_df <- data.frame(matrix(ncol = length(expected_columns_egg), nrow = 0))
+colnames(egg_reference_df) <- expected_columns_egg
 
 ##########################################################################################################
 
@@ -261,4 +263,126 @@ markdata_comparison_results <- lapply(markdata_dbf_files_eider1994.2005, compare
 ##This means either this data was not collected during those years and NA will have to be included. Or that data was collected under a different name.
 #Year 2000 indluded two files with 'markdata' in the name, "kigmarkdata.dbf" is missing one field from the reference table: 'SPECIESCOD'
 
+############################
+
+#comparing Resight .dbf files to reference files
+
+# List all .dbf files from those folders, including only files that have 'resight' in the name
+resight_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
+  # List .dbf files and filter for files with "markdata" in the name
+  dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
+  dbf_files_filtered <- dbf_files_all[grepl("resight", basename(dbf_files_all), ignore.case = TRUE)]
+  return(dbf_files_filtered)
+}))
+# View the filtered list of .dbf files with 'markdata' in the name
+print(resight_dbf_files_eider1994.2005)
+
+#Comparing columns of the markdata files to the markdata reference dataframe
+
+# Function to compare column names of a .dbf file with the reference data frame
+compare_columns <- function(dbf_file, resight_reference_df) {
+  # Read the .dbf file
+  dbf_data <- read.dbf(dbf_file)
+
+  # Get column names
+  dbf_cols <- colnames(dbf_data)
+  resight_reference_cols <- colnames(resight_reference_df)
+
+  # Identify differences in column names
+  missing_in_reference <- setdiff(dbf_cols, resight_reference_cols)
+  missing_in_dbf <- setdiff(resight_reference_cols, dbf_cols)
+
+  # Return the result
+  list(
+    dbf_file = dbf_file,
+    missing_in_reference = missing_in_reference,
+    missing_in_dbf = missing_in_dbf
+  )
+}
+
+# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_columns, resight_reference_df = resight_reference_df)
+#years 1994-2000 include at least all the fields specified in the reference data frame
+#years 2001-2005 are missing one field that is included in the reference data frame: "TARSUS"
+
+################################
+
+#comparing Visit .dbf files to reference files
+
+# List all .dbf files from those folders, including only files that have 'visit' in the name
+visit_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
+  # List .dbf files and filter for files with "markdata" in the name
+  dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
+  dbf_files_filtered <- dbf_files_all[grepl("visit", basename(dbf_files_all), ignore.case = TRUE)]
+  return(dbf_files_filtered)
+}))
+# View the filtered list of .dbf files with 'markdata' in the name
+print(visit_dbf_files_eider1994.2005)
+
+#Comparing columns of the markdata files to the markdata reference dataframe
+
+# Function to compare column names of a .dbf file with the reference data frame
+compare_columns <- function(dbf_file, visit_reference_df) {
+  # Read the .dbf file
+  dbf_data <- read.dbf(dbf_file)
+
+  # Get column names
+  dbf_cols <- colnames(dbf_data)
+  visit_reference_cols <- colnames(visit_reference_df)
+
+  # Identify differences in column names
+  missing_in_reference <- setdiff(dbf_cols, visit_reference_cols)
+  missing_in_dbf <- setdiff(visit_reference_cols, dbf_cols)
+
+  # Return the result
+  list(
+    dbf_file = dbf_file,
+    missing_in_reference = missing_in_reference,
+    missing_in_dbf = missing_in_dbf
+  )
+}
+
+# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_columns, visit_reference_df = visit_reference_df)
+#years 1994-2005 include at least all of the fields specified in the reference data frame
+
+###########################
+
+#comparing Egg .dbf files to reference files
+
+# List all .dbf files from those folders, including only files that have 'egg' in the name
+egg_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
+  # List .dbf files and filter for files with "markdata" in the name
+  dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
+  dbf_files_filtered <- dbf_files_all[grepl("egg", basename(dbf_files_all), ignore.case = TRUE)]
+  return(dbf_files_filtered)
+}))
+# View the filtered list of .dbf files with 'egg' in the name
+print(egg_dbf_files_eider1994.2005)
+
+#Comparing columns of the egg files to the egg reference dataframe
+
+# Function to compare column names of a .dbf file with the reference data frame
+compare_columns <- function(dbf_file, egg_reference_df) {
+  # Read the .dbf file
+  dbf_data <- read.dbf(dbf_file)
+
+  # Get column names
+  dbf_cols <- colnames(dbf_data)
+  egg_reference_cols <- colnames(egg_reference_df)
+
+  # Identify differences in column names
+  missing_in_reference <- setdiff(dbf_cols, egg_reference_cols)
+  missing_in_dbf <- setdiff(egg_reference_cols, dbf_cols)
+
+  # Return the result
+  list(
+    dbf_file = dbf_file,
+    missing_in_reference = missing_in_reference,
+    missing_in_dbf = missing_in_dbf
+  )
+}
+
+# Apply the comparison function to all filtered .dbf files with 'egg' in the name
+egg_comparison_results <- lapply(egg_dbf_files_eider1994.2005, compare_columns, egg_reference_df = egg_reference_df)
 
