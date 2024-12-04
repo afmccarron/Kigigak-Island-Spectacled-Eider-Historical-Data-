@@ -5,18 +5,19 @@
 #'  - Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
 #'  - Creating reference data frame for each of the tables to identify each of the required column names
 #'  - Comparing the data collected in each year to the reference data frames, identifying the differences in column names
-#'  -
+#'  - Combining the the .dbf files from each year
 #'  Author: [Ali McCarron]
 #'
 #'######################################################################################
 
-library(workflowr)
+install.load.package <- function(x) {
+  if (!require(x, character.only = TRUE))
+    install.packages(x, repos = 'http://cran.us.r-project.org')
+  require(x, character.only = TRUE)
+}
+package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr")
+sapply(package_vec, install.load.package)
 
-library(tidyverse)
-library(foreign)
-library(dplyr)
-library(here)
-library(tools)
 
 #Identifying file types, file names, and columns
 
@@ -217,8 +218,8 @@ compare_columns <- function(dbf_file, Header_reference_df) {
 
 # Apply the comparison function to all filtered .dbf files with 'header' in the name
 Header_comparison_results <- lapply(Header_dbf_files_eider1994.2005, compare_columns, Header_reference_df = Header_reference_df)
-###For Header data, it appears that from the years 1994-2005, all of the .dbf files include at least the data columns required by the protocol
-###This ensures there is no essential missing data from any of the Header.dbf data files from the years 1994-2005
+###For Header data, it appears that from the years 1994-2005, all of the .dbf files include all data columns specified in the reference data set except "DATE"
+
 
 #####################
 #comparing Markdata .dbf files to reference files
@@ -269,15 +270,15 @@ markdata_comparison_results <- lapply(markdata_dbf_files_eider1994.2005, compare
 
 # List all .dbf files from those folders, including only files that have 'resight' in the name
 resight_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "resight" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("resight", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'markdata' in the name
+# View the filtered list of .dbf files with 'resight' in the name
 print(resight_dbf_files_eider1994.2005)
 
-#Comparing columns of the markdata files to the markdata reference dataframe
+#Comparing columns of the resight data files to the resight reference dataframe
 
 # Function to compare column names of a .dbf file with the reference data frame
 compare_columns <- function(dbf_file, resight_reference_df) {
@@ -300,7 +301,7 @@ compare_columns <- function(dbf_file, resight_reference_df) {
   )
 }
 
-# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+# Apply the comparison function to all filtered .dbf files with 'resight' in the name
 resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_columns, resight_reference_df = resight_reference_df)
 #years 1994-2000 include at least all the fields specified in the reference data frame
 #years 2001-2005 are missing one field that is included in the reference data frame: "TARSUS"
@@ -311,15 +312,15 @@ resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_c
 
 # List all .dbf files from those folders, including only files that have 'visit' in the name
 visit_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "visit" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("visit", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'markdata' in the name
+# View the filtered list of .dbf files with 'visit' in the name
 print(visit_dbf_files_eider1994.2005)
 
-#Comparing columns of the markdata files to the markdata reference dataframe
+#Comparing columns of the visit files to the visit reference dataframe
 
 # Function to compare column names of a .dbf file with the reference data frame
 compare_columns <- function(dbf_file, visit_reference_df) {
@@ -342,7 +343,7 @@ compare_columns <- function(dbf_file, visit_reference_df) {
   )
 }
 
-# Apply the comparison function to all filtered .dbf files with 'markdata' in the name
+# Apply the comparison function to all filtered .dbf files with 'visit' in the name
 visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_columns, visit_reference_df = visit_reference_df)
 #years 1994-2005 include at least all of the fields specified in the reference data frame
 
@@ -352,7 +353,7 @@ visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_colum
 
 # List all .dbf files from those folders, including only files that have 'egg' in the name
 egg_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, function(folder) {
-  # List .dbf files and filter for files with "markdata" in the name
+  # List .dbf files and filter for files with "visit" in the name
   dbf_files_all <- list.files(path = folder, pattern = "\\.dbf$", full.names = TRUE, ignore.case = TRUE)
   dbf_files_filtered <- dbf_files_all[grepl("egg", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
@@ -386,3 +387,131 @@ compare_columns <- function(dbf_file, egg_reference_df) {
 # Apply the comparison function to all filtered .dbf files with 'egg' in the name
 egg_comparison_results <- lapply(egg_dbf_files_eider1994.2005, compare_columns, egg_reference_df = egg_reference_df)
 
+##################################################################################
+#Combining the .dbf files from each year into one data frame for respective category (e.g. 'Header' data)
+
+########################
+#Combining all "header" data from 1994-2005
+
+# Initialize an empty list to store data frames
+header_data_list <- list()
+
+# Loop through each file and read it, adding the folder name as a new column
+for (file in Header_dbf_files_eider1994.2005) {
+  # Read the .dbf files into a data frame
+  df <- read.dbf(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Store the modified data frame in the list
+  header_data_list[[file]] <- df
+}
+
+# Ensure that the PHOTO column is consistent in all data frames (convert to character)
+header_data_list <- lapply(header_data_list, function(df) {
+  df$PHOTO <- as.character(df$PHOTO)
+  return(df)
+})
+
+# Combine all the data frames into one
+header_combined_data1994.2005 <- bind_rows(header_data_list)
+
+########################
+#Combining all "markdata" data from 1994-2005
+
+# Initialize an empty list to store data frames
+markdata_data_list <- list()
+
+# Loop through each file and read it, adding the folder name as a new column
+for (file in markdata_dbf_files_eider1994.2005) {
+  # Read the .dbf files into a data frame
+  df <- read.dbf(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Store the modified data frame in the list
+  markdata_data_list[[file]] <- df
+}
+
+# Combine all the data frames into one
+markdata_combined_data1994.2005 <- bind_rows(header_data_list)
+
+#######################
+#Combining all "resight" data from 1994-2005
+
+# Initialize an empty list to store data frames
+resight_data_list <- list()
+
+# Loop through each file and read it, adding the folder name as a new column
+for (file in resight_dbf_files_eider1994.2005) {
+  # Read the .dbf files into a data frame
+  df <- read.dbf(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Store the modified data frame in the list
+  resight_data_list[[file]] <- df
+}
+
+# Combine all the data frames into one
+resight_combined_data1994.2005 <- bind_rows(header_data_list)
+
+#########################
+#Combining all "visit" data from 1994-2005
+
+# Initialize an empty list to store data frames
+visit_data_list <- list()
+
+# Loop through each file and read it, adding the folder name as a new column
+for (file in visit_dbf_files_eider1994.2005) {
+  # Read the .dbf files into a data frame
+  df <- read.dbf(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Store the modified data frame in the list
+  visit_data_list[[file]] <- df
+}
+
+# Combine all the data frames into one
+visit_combined_data1994.2005 <- bind_rows(header_data_list)
+
+########################
+#Combining all "egg" data from 1994-2005
+
+# Initialize an empty list to store data frames
+egg_data_list <- list()
+
+# Loop through each file and read it, adding the folder name as a new column
+for (file in egg_dbf_files_eider1994.2005) {
+  # Read the .dbf files into a data frame
+  df <- read.dbf(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Store the modified data frame in the list
+  egg_data_list[[file]] <- df
+}
+
+# Combine all the data frames into one
+egg_combined_data1994.2005 <- bind_rows(header_data_list)
