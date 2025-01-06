@@ -148,7 +148,7 @@ colnames(markdata_reference_df) <- expected_columns_markdata
 #Reference data frame for "resight" data
 
 # Define the expected column names (reference)
-expected_columns_resight <- c("CAPTURE", "FIRST_MARK", "TARSUS", "NASAL", "SEX", "NEST_NO", "DATE", "TIME", "OBS", "EASTING", "NORTHING", "ASSOC", "COMMENTS")
+expected_columns_resight <- c("CAPTURE", "FIRST_MARK", "TARSALCODE", "NASAL", "SEX", "NEST_NO", "DATE", "TIME", "OBS", "EASTING", "NORTHING", "ASSOC", "COMMENTS")
 
 # Create an empty data frame with these columns
 resight_reference_df <- data.frame(matrix(ncol = length(expected_columns_resight), nrow = 0))
@@ -515,3 +515,4 @@ for (file in egg_dbf_files_eider1994.2005) {
 
 # Combine all the data frames into one
 egg_combined_data1994.2005 <- bind_rows(header_data_list)
+
