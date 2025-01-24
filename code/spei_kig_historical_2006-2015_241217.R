@@ -13,7 +13,7 @@ install.load.package <- function(x) {
     install.packages(x, repos = 'http://cran.us.r-project.org')
   require(x, character.only = TRUE)
 }
-package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr", "readxl")
+package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr", "readxl", "purrr")
 sapply(package_vec, install.load.package)
 #######################################################
 
@@ -58,11 +58,11 @@ file_types_df_pt2 <- data.frame(
   File_Type = file_types)
 
 #identify all unique file types across folders 2005-2015
-file_types_all_pt2 <- unique(file_types_df$File_Type)
+file_types_all_pt2 <- unique(file_types_df_pt2$File_Type)
 
 #########################################################################################
 
-#Identifying all .dbf files and column names within each file from folders Eider2006-Eider2015
+#Identifying all excel files and column names within each file from folders Eider2006-Eider2015
 
 # Define a function to process a single folder
 process_folder <- function(folder_path) {
@@ -365,6 +365,17 @@ header_data_list2006.2015 <- list()
 # Initialize an empty vector to store all possible column names
 all_columns <- NULL
 
+# Define a mapping of column names that should be unified across all files
+# This is a list where the key is the original column name and the value is the new standardized column name
+column_rename_map <- list(
+  "Northing" = "NORTHING",   # Rename'Northing' to 'NORTHING'
+  "Easting" = "EASTING",     # Rename 'Easting' to 'EASTING'
+  "Nest #" = "NEST_NO",      # Rename 'Nest #' to 'NEST_NO'
+  "Nest Site" = "SITE"       # Rename 'Nest Site' to 'SITE'
+)
+
+
+
 # First loop: Collect all unique column names across all files
 for (file in Header_excel_files_eider2006.2015) {
   # Read the .dbf files into a data frame
@@ -376,24 +387,40 @@ for (file in Header_excel_files_eider2006.2015) {
   # Add the folder name (year) as a new column
   df$Year <- folder_name
 
+  # Apply column renaming based on the predefined mapping
+  colnames(df) <- sapply(colnames(df), function(x) {
+    # Use the map if the column exists in the rename map, otherwise leave as is
+    if (x %in% names(column_rename_map)) {
+      return(column_rename_map[[x]])
+    } else {
+      return(x)
+    }
+  })
+
   # Store all column names to determine the full set of columns
   all_columns <- union(all_columns, colnames(df))
 
   # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
   colnames(df) <- make.names(colnames(df), unique = TRUE)
 
-  # Check if 'Northing' column exists and convert to double if it does
-  if ("Northing" %in% colnames(df)) {
-    df$Northing <- as.double(df$Northing)
-  } else {
-    # If 'Northing' column doesn't exist, add it as NA
-    df$Northing <- NA
-  }
-
   # Add missing columns (if any) and fill them with NA
   missing_columns <- setdiff(all_columns, colnames(df))
   for (col in missing_columns) {
     df[[col]] <- NA
+  }
+
+  # Check and ensure 'Northing' exists, otherwise create it with NA
+  if (!"Northing" %in% colnames(df)) {
+    df$Northing <- NA
+  } else {
+    df$Northing <- as.double(df$Northing)
+  }
+
+  # Check and ensure 'Easting' exists, otherwise create it with NA
+  if (!"Easting" %in% colnames(df)) {
+    df$Easting <- NA
+  } else {
+    df$Easting <- as.character(df$Easting)  # Convert 'Easting' to character for consistency
   }
 
   # Store the modified data frame in the list
@@ -404,8 +431,14 @@ for (file in Header_excel_files_eider2006.2015) {
 for (i in 1:length(header_data_list2006.2015)) {
   df <- header_data_list2006.2015[[i]]
 
-  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
-  colnames(df) <- make.names(colnames(df), unique = TRUE)
+  # Apply column renaming again in case any file had other inconsistent names
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (x %in% names(column_rename_map)) {
+      return(column_rename_map[[x]])
+    } else {
+      return(x)
+    }
+  })
 
   # Ensure all columns have the same names as in all_columns
   missing_columns <- setdiff(all_columns, colnames(df))
@@ -413,14 +446,14 @@ for (i in 1:length(header_data_list2006.2015)) {
     df[[col]] <- NA
   }
 
-  # Ensure consistent data types (e.g., convert Easting to character and Northing to double)
-  if ("Easting" %in% colnames(df)) {
-    df$Easting <- as.character(df$Easting)  # Convert to character
+  # Convert 'Easting' to character (for consistency across all data frames)
+  if ("EASTING" %in% colnames(df)) {
+    df$EASTING <- as.character(df$EASTING)  # Ensure 'Easting' is consistently character
   }
 
-   # Ensure consistent data types (e.g., convert Northing to double if needed)
-  if ("Northing" %in% colnames(df)) {
-    df$Northing <- as.character(df$Northing)
+  # Convert 'Northing' to character (for consistency across all data frames)
+  if ("NORTHING" %in% colnames(df)) {
+    df$NORTHING <- as.character(df$NORTHING)  # Ensure 'Easting' is consistently character
   }
 
   # Add the updated data frame back to the list
@@ -429,4 +462,383 @@ for (i in 1:length(header_data_list2006.2015)) {
 
 # Combine all the data frames into one
 header_combined_data2006.2015 <- bind_rows(header_data_list2006.2015)
+
+#############################
+#Combining all "Markdata" data from 2006-2015
+
+# Initialize an empty list to store data frames
+markdata_data_list2006.2015 <- list()
+
+# Initialize an empty vector to store all possible column names
+all_columns <- NULL
+
+# Define a mapping of column names that should be unified across all files
+# This is a list where the key is the original column name and the value is the new standardized column name
+column_rename_map_markdata <- list(
+  "NASAL" = "NASALCODE",
+  "TARSAL" = "TARSALCODE",
+  "Nest #" = "NEST_NO",
+  "Band Number" = "BANDNUMBER",
+  "SPECIES" = "SPECIESCOD",
+  "WT(g)" = "WT",
+  "CULMEN (mm)" = "CULMEN",
+  "TARSUS (mm)" = "TARSUS",
+  "PLOT #" = "PLOT"
+)
+
+
+# First loop: Collect all unique column names across all files
+for (file in markdata_excel_files_eider2006.2015) {
+  # Read the excel files into a data frame
+  df <- read_excel(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Apply column renaming based on the predefined mapping
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (x %in% names(column_rename_map_markdata)) {
+      return(column_rename_map_markdata[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Standardize 'RECAP' column to logical type if it exists
+  if ("RECAP" %in% colnames(df)) {
+    df$RECAP <- as.logical(df$RECAP)  # Convert 'RECAP' to logical (TRUE/FALSE)
+  } else {
+    df$RECAP <- NA  # If 'RECAP' doesn't exist, assign NA
+  }
+
+  # Standardize 'EASTING' column to numeric type if it exists
+  if ("EASTING" %in% colnames(df)) {
+    df$EASTING <- as.numeric(df$EASTING)  # Convert 'EASTING' to numeric
+  } else {
+    df$EASTING <- NA  # If 'EASTING' doesn't exist, assign NA
+  }
+
+  # Standardize 'PLOT' column to character type if it exists
+  if ("PLOT" %in% colnames(df)) {
+    df$PLOT <- as.character(df$PLOT)  # Convert 'PLOT' to character
+  } else {
+    df$PLOT <- NA  # If 'PLOT' doesn't exist, assign NA
+  }
+
+  # Store all column names to determine the full set of columns
+  all_columns <- union(all_columns, colnames(df))
+
+  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
+  colnames(df) <- make.names(colnames(df), unique = TRUE)
+
+  # Add missing columns (if any) and fill them with NA
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Store the modified data frame in the list
+  markdata_data_list2006.2015[[file]] <- df
+}
+
+# Second loop: Adjust data frames to match the full set of columns and ensure column types are consistent
+for (i in 1:length(markdata_data_list2006.2015)) {
+  df <- markdata_data_list2006.2015[[i]]
+
+  # Apply column renaming again in case any file had other inconsistent names
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (x %in% names(column_rename_map_markdata)) {
+      return(column_rename_map_markdata[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Ensure all columns have the same names as in all_columns
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Standardize specific columns to appropriate types:
+
+  # Ensure 'RECAP' is standardized to logical type
+  if ("RECAP" %in% colnames(df)) {
+    df$RECAP <- as.logical(df$RECAP)
+  }
+
+  # Ensure 'EASTING' is standardized to numeric type
+  if ("EASTING" %in% colnames(df)) {
+    df$EASTING <- as.numeric(df$EASTING)
+  }
+
+  # Ensure 'NORTHING' is standardized to numeric type
+  if ("NORTHING" %in% colnames(df)) {
+    df$NORTHING <- as.numeric(df$NORTHING)
+  }
+
+  # Clean and standardize 'PLOT' column to numeric type, replacing invalid entries with NA
+  if ("PLOT" %in% colnames(df)) {
+    # Convert 'PLOT' to numeric, replacing non-numeric entries with NA
+    df$PLOT <- as.character(df$PLOT)  # Ensure it's character type first
+    df$PLOT <- trimws(df$PLOT)  # Remove any leading or trailing spaces
+
+  }
+
+  # Add the updated data frame back to the list
+  markdata_data_list2006.2015[[i]] <- df
+}
+
+# Now, combine all the data frames into one
+markdata_combined_data2006.2015 <- bind_rows(markdata_data_list2006.2015)
+
+
+
+##################################
+#Combining all "resight" data from 2006-2015
+
+# Initialize an empty list to store data frames
+resight_data_list2006.2015 <- list()
+
+# Initialize an empty vector to store all possible column names
+all_columns <- NULL
+
+# Define a mapping of column names that should be unified across all files
+# This is a list where the key is the original column name and the value is the new standardized column name
+column_rename_map_resight <- list(
+  "TARSAL" = "TARSALCODE",
+  "Nest #" = "NEST_NO",
+  "PLOT #" = "PLOT"
+)
+
+
+# First loop: Collect all unique column names across all files
+for (file in resight_excel_files_eider2006.2015) {
+  # Read the .dbf files into a data frame
+  df <- read_excel(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Apply column renaming based on the predefined mapping
+  colnames(df) <- sapply(colnames(df), function(x) {
+    # Use the map if the column exists in the rename map, otherwise leave as is
+    if (x %in% names(column_rename_map_resight)) {
+      return(column_rename_map_resight[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Store all column names to determine the full set of columns
+  all_columns <- union(all_columns, colnames(df))
+
+  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
+  colnames(df) <- make.names(colnames(df), unique = TRUE)
+
+  # Add missing columns (if any) and fill them with NA
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Store the modified data frame in the list
+  resight_data_list2006.2015[[file]] <- df
+}
+
+# Second loop: Adjust data frames to match the full set of columns
+for (i in 1:length(resight_data_list2006.2015)) {
+  df <- resight_data_list2006.2015[[i]]
+
+  # Apply column renaming again in case any file had other inconsistent names
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (x %in% names(column_rename_map_resight)) {
+      return(column_rename_map_resight[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Ensure all columns have the same names as in all_columns
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Standardize 'DATE' column to Date type
+  if ("DATE" %in% colnames(df)) {
+    df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
+  }
+
+  # Ensure 'EASTING' is standardized to numeric type
+  if ("EASTING" %in% colnames(df)) {
+    df$EASTING <- as.numeric(df$EASTING)
+  }
+
+  # Ensure 'NORTHING' is standardized to numeric type
+  if ("NORTHING" %in% colnames(df)) {
+    df$NORTHING <- as.numeric(df$NORTHING)
+  }
+
+  # Standardize 'PLOT' column to character type if it exists
+  if ("PLOT" %in% colnames(df)) {
+    df$PLOT <- as.character(df$PLOT)  # Convert 'PLOT' to character
+  } else {
+    df$PLOT <- NA  # If 'PLOT' doesn't exist, assign NA
+  }
+
+  # Add the updated data frame back to the list
+  resight_data_list2006.2015[[i]] <- df
+}
+
+# Combine all the data frames into one
+resight_combined_data2006.2015 <- bind_rows(resight_data_list2006.2015)
+
+
+#####################################
+#Combining all "Visit" data from 2006-2015
+
+# Initialize an empty list to store data frames
+visit_data_list2006.2015 <- list()
+
+# Initialize an empty vector to store all possible column names
+all_columns <- NULL
+
+# Define a mapping of column names that should be unified across all files
+# This is a list where the key is the original column name and the value is the new standardized column name
+column_rename_map_visit <- list(
+  "Nest #" = "NEST_NO",
+  "HEN STATUS" = "HEN_STATUS",
+  "Total..Eggs" = "NO_EGGS",
+  "New Eggs" = "EGGS_NEW",
+  "NEST STATUS" = "STATUS",
+  "VISIT #" = "VISIT",
+  "Total...Eggs" = "NO_EGGS"
+)
+
+
+# First loop: Collect all unique column names across all files
+for (file in visit_excel_files_eider2006.2015) {
+  # Read the .dbf files into a data frame
+  df <- read_excel(file)
+
+  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
+  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+
+  # Add the folder name (year) as a new column
+  df$Year <- folder_name
+
+  # Apply column renaming based on the predefined mapping
+  colnames(df) <- sapply(colnames(df), function(x) {
+    # Use the map if the column exists in the rename map, otherwise leave as is
+    if (x %in% names(column_rename_map_visit)) {
+      return(column_rename_map_visit[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Store all column names to determine the full set of columns
+  all_columns <- union(all_columns, colnames(df))
+
+  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
+  colnames(df) <- make.names(colnames(df), unique = TRUE)
+
+  # Add missing columns (if any) and fill them with NA
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Store the modified data frame in the list
+  visit_data_list2006.2015[[file]] <- df
+}
+
+# Second loop: Adjust data frames to match the full set of columns
+for (i in 1:length(visit_data_list2006.2015)) {
+  df <- visit_data_list2006.2015[[i]]
+
+  # Apply column renaming again in case any file had other inconsistent names
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (x %in% names(column_rename_map_visit)) {
+      return(column_rename_map_visit[[x]])
+    } else {
+      return(x)
+    }
+  })
+
+  # Ensure all columns have the same names as in all_columns
+  missing_columns <- setdiff(all_columns, colnames(df))
+  for (col in missing_columns) {
+    df[[col]] <- NA
+  }
+
+  # Standardize column types where necessary
+  # Example: Standardize 'Total..Eggs' column to numeric (double)
+  if ("NO_EGGS" %in% colnames(df)) {
+    df$NO_EGGS <- as.double(df$NO_EGGS)
+  }
+
+  # Example: Standardize 'Missing..Eggs' column to numeric (double)
+  if ("Missing..Eggs" %in% colnames(df)) {
+    df$`Missing..Eggs` <- as.double(df$`Missing..Eggs`)
+  }
+
+  # Standardize 'Depredated.Eggs'
+  if ("Depredated.Eggs" %in% colnames(df)) {
+    df$`Depredated.Eggs` <- as.double(df$`Depredated.Eggs`)
+  }
+
+  # Standardize 'Inviable.Eggs'
+  if ("Inviable.Eggs" %in% colnames(df)) {
+    df$`Inviable.Eggs` <- as.double(df$`Inviable.Eggs`)
+  }
+
+  # Standardize 'Unknown.Eggs'
+  if ("Unknown.Eggs" %in% colnames(df)) {
+    df$Unknown.Eggs <- as.double(df$Unknown.Eggs)
+  }
+
+  # Standardize 'Unknown.Eggs'
+  if ("Aband.Eggs" %in% colnames(df)) {
+    df$`Aband.Eggs` <- as.double(df$`Aband.Eggs`)
+  }
+
+  # Standardize 'CANDLE2'
+  if ("CANDLE2" %in% colnames(df)) {
+    df$CANDLE2 <- as.double(df$CANDLE2)
+  }
+
+  # Standardize 'VISIT'
+  if ("VISIT" %in% colnames(df)) {
+    df$VISIT <- as.double(df$VISIT)
+  }
+
+  # Standardize 'DATE' column to Date type
+  if ("DATE" %in% colnames(df)) {
+    df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
+  }
+
+  # Ensure 'EASTING' is standardized to numeric type
+  if ("EASTING" %in% colnames(df)) {
+    df$EASTING <- as.numeric(df$EASTING)
+  }
+
+  # Ensure 'NORTHING' is standardized to numeric type
+  if ("NORTHING" %in% colnames(df)) {
+    df$NORTHING <- as.numeric(df$NORTHING)
+  }
+
+  # Add the updated data frame back to the list
+  visit_data_list2006.2015[[i]] <- df
+}
+
+# Combine all the data frames into one
+visit_combined_data2006.2015 <- bind_rows(visit_data_list2006.2015)
 
