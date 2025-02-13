@@ -20,7 +20,7 @@ kigmarkdata2000_updated <- kigmarkdata2000 %>%
 markdata2000_updated <- markdata2000 %>%
   mutate(DATE = update(DATE, year = 2000))
 
-#Creating a unique identifying number for each row by combinging band number and date
+#Creating a unique identifying number for each row by combining band number and date
 #This is because some individual birds were captured twice in one season and there will therefore be repeating band numbers
 
 #Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU" column to create a column that includes the entire band number
