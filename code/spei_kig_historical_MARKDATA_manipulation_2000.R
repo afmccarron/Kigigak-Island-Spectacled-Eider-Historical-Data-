@@ -36,19 +36,13 @@ markdata2000_updated$MARK_ID <- paste(markdata2000_updated$BANDNU, markdata2000_
 #Changing the name of column "SPECIESCOD" to "SPECIES" to be consistent
 markdata2000_updated <- markdata2000_updated %>% rename(SPECIES = SPECIESCOD)
 
+#comparing column names between the two dataframes
+
+setdiff(colnames(kigmarkdata2000_updated), colnames(markdata2000_updated))
+setdiff(colnames(markdata2000_updated), colnames(kigmarkdata2000_updated))
+intersect(colnames(kigmarkdata2000_updated), colnames(markdata2000_updated))
+
+merged_markdata2000 <- merge(kigmarkdata2000_updated, markdata2000_updated, by = "MARK_ID", all.x = TRUE)
 
 
 
-
-# Sort the data frames by the unique ID column (e.g., "ID") if necessary
-markdata2000_updated <- markdata2000_updated[order(markdata2000_updated$MARK_ID), ]
-kigmarkdata2000_updated <- kigmarkdata2000_updated[order(kigmarkdata2000_updated$MARK_ID), ]
-
-# Remove the extra rows in kigmarkdata2000_updated (those that do not exist in markdata2000_updated)
-kigmarkdata2000_updated_clean <- kigmarkdata2000_updated[kigmarkdata2000_updated$MARK_ID %in% markdata2000_updated$MARK_ID, ]
-
-# Compare the two data frames after cleaning
-comparison_result <- all.equal(markdata2000_updated, kigmarkdata2000_updated_clean)
-
-# Print the comparison result
-print(comparison_result)

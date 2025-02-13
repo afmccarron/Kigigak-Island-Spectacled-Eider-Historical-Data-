@@ -435,14 +435,14 @@ for (file in markdata_dbf_files_eider1994.2005) {
   folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
 
   # Add the folder name (year) as a new column
-  df$Year <- folder_name
+  df$YEAR <- folder_name
 
   # Store the modified data frame in the list
   markdata_data_list[[file]] <- df
 }
 
 # Combine all the data frames into one
-markdata_combined_data1994.2005 <- bind_rows(header_data_list)
+markdata_combined_data1994.2005 <- bind_rows(markdata_data_list)
 
 #######################
 #Combining all "resight" data from 1994-2005

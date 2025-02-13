@@ -496,7 +496,7 @@ for (file in markdata_excel_files_eider2006.2015) {
   folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
 
   # Add the folder name (year) as a new column
-  df$Year <- folder_name
+  df$YEAR <- folder_name
 
   # Apply column renaming based on the predefined mapping
   colnames(df) <- sapply(colnames(df), function(x) {
