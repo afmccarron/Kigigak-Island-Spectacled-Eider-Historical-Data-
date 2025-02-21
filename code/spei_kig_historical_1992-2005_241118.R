@@ -1,6 +1,7 @@
 #'#####################################################################################
 #' Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
-#' Contents:
+#' Contents: [Standardizing and Compiling data files collected from years 1994-2005 ("Quack Years")]
+#'  - Installing and loading necessary packages
 #'  - Identifying all file types in folders from Eider1994-Eider2005
 #'  - Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
 #'  - Creating reference data frame for each of the tables to identify each of the required column names
@@ -17,7 +18,7 @@ install.load.package <- function(x) {
 }
 package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr")
 sapply(package_vec, install.load.package)
-
+####################################################
 
 #Identifying file types, file names, and columns
 

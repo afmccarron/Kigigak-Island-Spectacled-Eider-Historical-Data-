@@ -1,15 +1,48 @@
-#'#####################################################################################
-#' Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
-#' Contents: [Standardizing and Compiling data files collected from years 1994-2005 ("Quack Years")]
-#'  - Installing and loading necessary packages
-#'  - Identifying all file types in folders from Eider1994-Eider2005
-#'  - Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
-#'  - Creating reference data frame for each of the tables to identify each of the required column names
-#'  - Comparing the data collected in each year to the reference data frames, identifying the differences in column names
-#'  - Combining the the .dbf files from each year
-#'  Author: [Ali McCarron]
-#'
-#'######################################################################################
+---
+title: "data_summary_kig_historical_total_20250213.Rmd"
+author: "Ali McCarron"
+date: "2025-02-13"
+output: html_document
+---
+```{r}
+knitr:: opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+
+### Introduction
+
+The goal of this R script is to compile data collected from breeding Spectacled Eiders on Kigigak Island located on the Yukon Delta National Wildlife Refuge from years 1994-2015. During years 1994-2005, data was collected and input into a dBase relational database called "Quack". During years 2006-2015, data was collected and input into individual Microsoft Excel spreadsheets. In order to make sense of this historical data three major steps should be completed: 1) identifying what files exist for each of the years of data collection, and within each file, what columns exist; 2) Identifying and standardizing differences between data collected, and determining which of the differences are different descriptors for the same data and which differences come from data that has been collected in some years but is not consistent over all the years; 3) Compiling the standardized data into one database for each table of data collected.
+
+To combine this data stored in inconsistent forms, this code is broken up into three major parts: compiling and standardizing the "quack" years, compiling and standardizing the "excel" years, and using the output from those parts to compile and complete the final databases that include data from all years collected. 
+
+#### Part 1: Years 1994-2005
+##### Table of contents
+Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
+
+Contents: [Standardizing and Compiling data files collected from years 1994-2005 ("Quack Years")]
+
+1. Installing and loading necessary packages
+2. Identifying all file types in folders from Eider1994-Eider2005
+3. Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
+4. Creating reference data frame for each of the tables to identify each of the required column names
+5. Comparing the data collected in each year to the reference data frames, identifying the differences in column names
+  + 5a. Comparing header data and results
+  + 5b. Comparing markdata and results
+  + 5c. Comparing resight data and results
+  + 5d. Comparing visit data and results
+  + 5e. Comparing egg data and results
+6. Combining the the .dbf files from each year
+  + 6a. Header data combination
+  + 6b. Markdata combination
+  + 6c. Resight data combination
+  + 6d. Visit data combination
+  + 6e. Egg data combination
+
+Author: [Ali McCarron]
+
+##### 1.
+
+```{r}
 install.load.package <- function(x) {
 
   if (!require(x, character.only = TRUE)) {
@@ -23,8 +56,13 @@ install.load.package <- function(x) {
 package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf")
 sapply(package_vec, install.load.package)
 
-####################################################
+```
 
+The code section above outlines the packages needed for the following section. It is structured for reproducibility on different machines; loading the required packages, and if needed, installing them first.
+
+##### 2.
+
+```{r}
 #Identifying all file types within folders Eider1994-Eider2005
 
 # List of folder paths to process
@@ -68,8 +106,14 @@ file_types_df <- data.frame(
 #identify all unique file types across folders 1994-2005
 file_types_all <- unique(file_types_df$File_Type)
 
-##########################################################################
+print(file_types_all)
 
+```
+The code chunk above loops through the data folders from years 1994-2005, identifies the file extensions that exist in each data folder, and creates a data frame that includes the name of the folder name and which file types exist in each folder. The last line of code creates a value that lists all of the unique file types across all of the data folders from 1994-2005; this is the list seen printed, and includes the entire variety of file types located in the data folders. 
+
+##### 3.
+
+```{r}
 #Identifying all .dbf files and column names within each file from folders Eider1994-Eider2005
 
 # Define a function to process a single folder
@@ -116,12 +160,20 @@ eider_data_folders_1994.2005 <- c("data/Eider1994",
 # Apply the process_folder function to each folder and combine the results
 combined_eider_data_names_1994.2005 <- do.call(rbind, lapply(eider_data_folders_1994.2005, process_folder))
 
-# View the resulting combined dataframe
-print(combined_eider_data_names_1994.2005)
-#Dataframe includes folder names, file names of .dbf files within each folder, and column names within each file.
+```
 
-#########################################################################################################
+<details><summary>combined_eider_data_names_1994.2005 TABLE *(Click to expand)*</summary>
+```{R}
+knitr::kable(combined_eider_data_names_1994.2005)
+```
+</details>
 
+
+  As specified previously, during years 1994-2005, all data collected was input into a dBase database called "Quack"; this files of data saved from these years are in a .dbf or .DBF file form. The code chunk above defines a function that identifies all the .dbf/.DBF files within a data folder, gathers all of the column names within the each file, and creates a data frame that includes the folder name (e.g. Eider1994), file name (e.g. Header.dbf), and a list of the column names in each file (e.g. NEST_NO). This function is then applied to the data folders from years 1994-2005 and combined to create one data frame across all years included. 
+  
+##### 4.
+  
+```{r}
 #Create a reference data frame with columns specified as needed in the project protocols
 #This data frame will have no data in it, it is just used as a guide to compare the collected data sets to
 
@@ -180,8 +232,13 @@ expected_columns_egg <- c("NEST_NO", "SPECIES", "OBS", "EGGNO", "LENGTH", "WIDTH
 egg_reference_df <- data.frame(matrix(ncol = length(expected_columns_egg), nrow = 0))
 colnames(egg_reference_df) <- expected_columns_egg
 
-##########################################################################################################
+```
 
+Maintaining consistent names for each column of data collected is important to creating a compiled set of data. The column names for each table of data was defined in a protocol document for this data project. The code chunk above creates empty data frames for each of the data tables that include the column names defined in the project protocols. These are used as a guideline to compare the data collected to.
+
+##### 5a.
+
+```{r}
 #Compare the .dbf files stored in the "data" folder to the reference data frames to identify differences
 #Differences will be defined as "missing in reference" or "missing in data file"
 #############
@@ -194,7 +251,7 @@ Header_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005, f
   dbf_files_filtered <- dbf_files_all[grepl("header", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'header' in the name
+#filtered list of .dbf files with 'header' in the name
 print(Header_dbf_files_eider1994.2005)
 
 #Comparing columns of the Header files to the Header reference dataframe
@@ -224,8 +281,23 @@ compare_columns <- function(dbf_file, Header_reference_df) {
 Header_comparison_results <- lapply(Header_dbf_files_eider1994.2005, compare_columns, Header_reference_df = Header_reference_df)
 ###For Header data, it appears that from the years 1994-2005, all of the .dbf files include all data columns specified in the reference data set except "DATE"
 
+```
+<details><summary>Header_comparison_results LIST *(Click to expand)*</summary>
+```{r}
+print(Header_comparison_results)
+```
+</details>
 
-#####################
+
+The code chunk above compares the "Header" data files from years 1994-2005 to the reference data frame created section 4. This allows us to identify any discrepancies in column names that could affect the compiling process. This code loops through the data folders and identifies the file names with the word "header" in the name, then prints a list of the files to confirm that a data file from each year has successfully been identified; creates a function that compares the column names in each data file to the reference data frame; then applies that function to the header data file from each year and creates a data list that identifies the discrepancies. The results are outlined by file name, the column names that are missing in the reference table, and the column names that are missing in the dbf file. Any column names that are missing in the dbf file are compared to the names that are missing in the reference file. If there are column names that are labeled in a different name but collect the same data, the column names in the data frame are changed to match; any column names that appear to be missing in the dbf file and do not seem to correlate with a column that is missing in the reference, are columns of data that were not collected or input during that years' data collection.
+
+For the header data collected from 1994-2005, there appears to be no missing column names in the dbf files. While there are columns that are categorized in the "missing in reference" field, this indicates that the header data collected from these years have at least all of the required fields specified by the protocols, and include extra columns that are not necessarily specified by name in the protocols. 
+
+*I also noted through this process that "DATE" is not a required field in the header data and wonder if it should be included.*
+
+##### 5b.
+
+```{r}
 #comparing Markdata .dbf files to reference files
 
 # List all .dbf files from folders, including only files that have 'markdata' in the name
@@ -235,7 +307,7 @@ markdata_dbf_files_eider1994.2005 <- unlist(lapply(eider_data_folders_1994.2005,
   dbf_files_filtered <- dbf_files_all[grepl("markdata", basename(dbf_files_all), ignore.case = TRUE)]
   return(dbf_files_filtered)
 }))
-# View the filtered list of .dbf files with 'markdata' in the name
+#filtered list of .dbf files with 'markdata' in the name
 print(markdata_dbf_files_eider1994.2005)
 
 #Comparing columns of the markdata files to the markdata reference dataframe
@@ -268,8 +340,22 @@ markdata_comparison_results <- lapply(markdata_dbf_files_eider1994.2005, compare
 ##This means either this data was not collected during those years and NA will have to be included. Or that data was collected under a different name.
 #Year 2000 indluded two files with 'markdata' in the name, "kigmarkdata.dbf" is missing one field from the reference table: 'SPECIESCOD'
 
-############################
+```
 
+<details><summary>markdata_comparison_results LIST *(Click to expand)*</summary>
+```{r}
+print(markdata_comparison_results)
+```
+</details>
+
+
+The code chunk above compares the "markdata" data files from years 1994-2005 to the reference data frame created in section 4. This follows the same structure and serves the same function as comparing the 'header' data in section 5a.
+
+For the markdata collected from years 1994-2000, there are no fields missing from the dbf file, indicating that these data files have at least all of the fields specified in the protocols. From 2001-2005, there are two fields that are missing in the dbf file that are specified in the reference table: 'NASALCODE' and 'TARSALCODE'. After looking at the dbf file, this data was collected and input under the names: 'NASAL' and 'TARSAL' which can be altered to match when combining the dataframes. Additionally, the year 2000 included two markdata files: "Markdata.dbf" and "kigmarkdata.dbf". These files are nearly identical, with the exception or two extra rows of data in the 'kigmarkdata.dbf' file. This problem is addressed and manipulated later. 
+
+##### 5c.
+
+```{r}
 #comparing Resight .dbf files to reference files
 
 # List all .dbf files from folders, including only files that have 'resight' in the name
@@ -309,8 +395,22 @@ compare_columns <- function(dbf_file, resight_reference_df) {
 resight_comparison_results <- lapply(resight_dbf_files_eider1994.2005, compare_columns, resight_reference_df = resight_reference_df)
 #All years are missing "TARSALCODE"
 
-################################
+```
 
+<details><summary>resight_comparison_results LIST *(Click to expand)*</summary>
+```{r}
+print(resight_comparison_results)
+```
+</details>
+
+
+The code chunk above compares the "resight" data files from years 1994-2005 to the reference data frame created in section 4. This follows the same structure and serves the same function as comparing the 'header' and 'markdata' data. 
+
+For the resight data collected from years 1994-2005, the field 'TARSALCODE' is missing from the dbf in all years. After looking at the dbf tables, the data was collected and input under the name: 'TARSUS' and can be changed to match the protocol specifications.  
+
+##### 5d.
+
+```{r}
 #comparing Visit .dbf files to reference files
 
 # List all .dbf files from folders, including only files that have 'visit' in the name
@@ -350,8 +450,21 @@ compare_columns <- function(dbf_file, visit_reference_df) {
 visit_comparison_results <- lapply(visit_dbf_files_eider1994.2005, compare_columns, visit_reference_df = visit_reference_df)
 #years 1994-2005 include at least all of the fields specified in the reference data frame
 
-###########################
+```
 
+<details><summary>visit_comparison_results LIST *(Click to expand)*</summary>
+```{r}
+print(visit_comparison_results)
+```
+</details>
+
+The code chunk above compares the "visit" data files from years 1994-2005 to the reference data frame created in section 4. This follows the same structure and serves the same function as comparing the 'header', 'markdata', and 'resight' data. 
+
+For the visit data collected from 1994-2005, there appears to be no missing column names in the dbf files. There are columns that are categorized in the "missing in reference" field, this indicates that the visit data collected from these years have at least all of the required fields specified by the protocols, and include extra columns that are not necessarily specified by name in the protocols.
+
+##### 5e.
+
+```{r}
 #comparing Egg .dbf files to reference files
 
 # List all .dbf files from folders, including only files that have 'egg' in the name
@@ -390,10 +503,20 @@ compare_columns <- function(dbf_file, egg_reference_df) {
 # Apply the comparison function to all filtered .dbf files with 'egg' in the name
 egg_comparison_results <- lapply(egg_dbf_files_eider1994.2005, compare_columns, egg_reference_df = egg_reference_df)
 
-##################################################################################
-#Combining the .dbf files from each year into one data frame for respective category (e.g. 'Header' data)
+```
+<details><summary>egg_comparison_results LIST *(Click to expand)*</summary>
+```{r}
+print(egg_comparison_results)
+```
+</details>
 
-########################
+The code chunk above compares the "egg" data files from years 1994-2005 to the reference data frame created in section 4. This follows the same structure and serves the same function as comparing the 'header', 'markdata','resight', and 'visit' data. 
+
+For the egg data collected from 1994-2005, there appears to be no missing column names in the dbf files. There are columns that are categorized in the "missing in reference" field, this indicates that the egg data collected from these years have at least all of the required fields specified by the protocols, and include extra columns that are not necessarily specified by name in the protocols. After year 2005, there was no more egg data collected. 
+
+##### 6a. 
+
+```{r}
 # Combining all "header" data from 1994-2005
 
 # Initialize an empty list to store data frames
@@ -406,16 +529,16 @@ unique_header_ids <- character(0)
 for (file in Header_dbf_files_eider1994.2005) {
   # Read the .dbf files into a data frame
   df <- read.dbf(file)
-
+  
   # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
   folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
-
+  
   # Add the folder name (year) as a new column
   df$Year <- folder_name
-
+  
   # Create a new column 'HEADER_ID' by combining 'NEST_NO' and 'Year'
   df$HEADER_ID <- paste(df$NEST_NO, df$Year, sep = "_")
-
+  
   # Handle duplicates for HEADER_IDs
   duplicated_rows <- duplicated(df$HEADER_ID) | duplicated(df$HEADER_ID, fromLast = TRUE)
   if (any(duplicated_rows)) {
@@ -423,17 +546,17 @@ for (file in Header_dbf_files_eider1994.2005) {
     for (id in unique(df$HEADER_ID[duplicated_rows])) {
       rows <- which(df$HEADER_ID == id)
       rows_data <- df[rows, ]
-
+      
       # Check if the rows are identical across all columns (except HEADER_ID)
       identical_rows <- apply(
-        rows_data[, setdiff(names(rows_data), "HEADER_ID")],
-        1,
+        rows_data[, setdiff(names(rows_data), "HEADER_ID")], 
+        1, 
         function(x) {
           # Check if any NA values exist and treat them as unequal
           all.equal(x, rows_data[1, setdiff(names(rows_data), "HEADER_ID")], check.attributes = FALSE) == TRUE
         }
       )
-
+      
       if (all(identical_rows)) {
         # If they are identical, keep only one row
         df <- df[-rows[-1], ]
@@ -445,13 +568,13 @@ for (file in Header_dbf_files_eider1994.2005) {
       }
     }
   }
-
+  
   # Update the list of unique HEADER_ID values with the new entries
   unique_header_ids <- c(unique_header_ids, df$HEADER_ID)
-
+  
   # Reorder the columns to move HEADER_ID to the left
   df <- df[, c("HEADER_ID", setdiff(names(df), "HEADER_ID"))]
-
+  
   # Store the modified data frame in the list
   header_data_list[[file]] <- df
 }
@@ -464,8 +587,18 @@ header_data_list <- lapply(header_data_list, function(df) {
 
 # Combine all the data frames into one
 header_combined_data1994.2005 <- bind_rows(header_data_list)
+```
+<details><summary>header_combined_data1994.2005 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr::kable(header_combined_data1994.2005)
+```
+</details>
 
-########################
+The code chunk above, processes the header dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, as well as an empty variable to store unique ID values that we will create. Then it loops through each of dbf files and reads them from the Header_dbf_files_eider1994.2005 value created in 5a. I modify the data frame by adding a column: 'Year' to ensure that the data remains organized to the year that is was collected in. The year is extracted from the folder name. The header data does not include a column that categorizes each row as unique; so I combined the 'NEST_NO' column with the 'Year' column to create a unique 'HEADER_ID' column. Then it loops through and identifies duplicates in the HEADER_ID column, checks to see if their rest of their data is identical, and combines them if they are; if they are not identical, a tail number is added to the HEADER_ID column. 'HEADER_ID' column is then moved to the left of the table for ease of viewing. The modified data frames were then attempted to combine and an error occurred specifying that the data type in the "PHOTO" column was not consistent across all data frames. Code was then added to convert the data in the "PHOTO" column to a consistent to character/string data form. 
+
+##### 6b. 
+
+```{r}
 #Combining all "markdata" data from 1994-2005
 
 # Initialize an empty list to store data frames
@@ -488,8 +621,18 @@ for (file in markdata_dbf_files_eider1994.2005) {
 
 # Combine all the data frames into one
 markdata_combined_data1994.2005 <- bind_rows(markdata_data_list)
+```
+<details><summary>markdata_combined_data1994.2005 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr::kable(markdata_combined_data1994.2005)
+```
+</details>
 
-#######################
+The code chunk above, processes the markdata dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, then loops through each of dbf files and reads them from the markdata_dbf_files_eider1994.2005 value created in 5b. I modify the data frame by adding a column: 'YEAR' to ensure that the data remains organized to the year that is was collected in. The year is extracted from the folder name. The markdata files are then combined into one data frame labeled: "markdata_combined_data1994.2005". The DATE data input during the year 2000, was input as year 1900 and will be later changed.
+
+##### 6c. 
+
+```{r}
 #Combining all "resight" data from 1994-2005
 
 # Initialize an empty list to store data frames
@@ -519,7 +662,18 @@ resight_data_list <- lapply(resight_data_list, function(df) {
 # Combine all the data frames into one
 resight_combined_data1994.2005 <- bind_rows(resight_data_list)
 
-#########################
+```
+<details><summary>resight_combined_data1994.2005 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr::kable(resight_combined_data1994.2005)
+```
+</details>
+
+The code chunk above, processes the resight dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, then loops through each of dbf files and reads them from the resight_dbf_files_eider1994.2005 value created in 5c. I modify the data frame by adding a column: 'Year' to ensure that the data remains organized to the year that is was collected in. The year is extracted from the folder name. The modified data frames were then attempted to combine and an error occurred specifying that the data type in the "NORTHING" column was not consistent across all data frames. Code was then added to convert the data in the "NORTHING" column to a consistent to character/string data form. 
+
+##### 6d.
+
+```{r}
 #Combining all "visit" data from 1994-2005
 
 # Initialize an empty list to store data frames
@@ -543,7 +697,18 @@ for (file in visit_dbf_files_eider1994.2005) {
 # Combine all the data frames into one
 visit_combined_data1994.2005 <- bind_rows(visit_data_list)
 
-########################
+```
+<details><summary>visit_combined_data1994.2005 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr::kable(visit_combined_data1994.2005)
+```
+</details>
+
+The code chunk above, processes the visit dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, then loops through each of dbf files and reads them from the visit_dbf_files_eider1994.2005 value created in 5d. I modify the data frame by adding a column: 'Year' to ensure that the data remains organized to the year that it was collected in. The year is extracted from the folder name. The visit data files are then combined into a single data frame labeled: "visit_combined_data_1994.2005".
+
+##### 6e.
+
+```{r}
 #Combining all "egg" data from 1994-2005
 
 # Initialize an empty list to store data frames
@@ -573,27 +738,45 @@ egg_data_list <- lapply(egg_data_list, function(df) {
 # Combine all the data frames into one
 egg_combined_data1994.2005 <- bind_rows(egg_data_list)
 
-############################################################################################
-######################################################################################
-# Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
-# Contents: [Standardizing and Compiling data files collected from years 2006-2015 ("Excel years")]
-#  - Identifying all file types in folders from Eider2006-Eider2015
-#  - Identifying file names and column names within each file for the .xls and .xlsx files from folders Eider2006-Eider2015
-#  - Creating reference data frame for each of the tables to identify each of the required column names
-#  - Compare the excel files stored in the "data" folder to the reference data frames to identify differences
-#  - Combining the excel files from each year into one data frame for respective category (e.g. 'Header' data)
-#    - Standardizing various data types as needed
-#  Author: [Ali McCarron]
-#
-#######################################################################################
+```
+<details><summary>egg_combined_data1994.2005 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr::kable(egg_combined_data1994.2005)
+```
+</details>
 
-#######################################################
+The code chunk above, processes the egg dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, then loops through each of dbf files and reads them from the egg_dbf_files_eider1994.2005 value created in 5e. I modify the data frame by adding a column: 'Year' to ensure that the data remains organized to the year that is was collected in. The year is extracted from the folder name. The modified data frames were then attempted to combine and an error occurred specifying that the data type in the "EGGNO" column was not consistent across all data frames. Code was then added to convert the data in the "EGGNO" column to a consistent integer data form. 
 
+#### Part 2: Years 2006-2015
+##### Table of Contents:
+Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
+
+Contents: [Standardizing and Compiling data files collected from years 2006-2015 ("Excel years")]
+
+7. Identifying all file types in folders from Eider2006-Eider2015
+8. Identifying file names and column names within each file for the .xls and .xlsx files from folders Eider2006-Eider2015
+9. Creating reference data frame for each of the tables to identify each of the required column names
+10. Compare the excel files stored in the "data" folder to the reference data frames to identify differences
+  + 10a. Comparing header data and results
+  + 10b. Comparing markdata and results
+  + 10c. Comparing resight data and results
+  + 10d. Comparing visit data and results
+11. Combining the excel files from each year into one data frame for respective category
+  + 11a. Header data combination and standardization
+  + 11b. Markdata combination and standardization
+  + 11c. Resight data combination and standardization
+  + 11d. Visit data combination and standardization
+
+Author: [Ali McCarron]
+
+##### 7.
+
+```{r}
 #Identifying file types, file names, and columns
 
 #Identifying all file types within folders Eider1994-Eider2005
 
-#List of folder paths to process
+# List of folder paths to process
 folders_pt2 <- c("data/Eider2006",
                  "data/Eider2007",
                  "data/Eider2008",
@@ -603,9 +786,9 @@ folders_pt2 <- c("data/Eider2006",
                  "data/Eider2012",
                  "data/Eider2013",
                  "data/Eider2014",
-                 "data/Eider2015" )
+                 "data/Eider2015")
 
-#Define a function to process each folder and extract file types
+# Define a function to process each folder and extract file types
 get_file_types <- function(folder_path) {
   # List all files in the folder
   files <- list.files(path = folder_path, full.names = TRUE)
@@ -632,8 +815,15 @@ file_types_df_pt2 <- data.frame(
 #identify all unique file types across folders 2005-2015
 file_types_all_pt2 <- unique(file_types_df_pt2$File_Type)
 
-#########################################################################################
+print(file_types_all_pt2)
 
+```
+
+The code chunk above loops through the data folders from years 2006-2015, identifies the file extensions that exist in each data folder, and creates a data frame that includes the name of the folder and which file types exist in each folder. The last line of code creates a value that lists all of the unique file types across all of the data folders from 2006-2015; this is the list seen printed, and includes the entire variety of file types located in the data folders.
+
+##### 8. 
+
+```{r}
 #Identifying all excel files and column names within each file from folders Eider2006-Eider2015
 
 # Define a function to process a single folder
@@ -641,10 +831,10 @@ process_folder <- function(folder_path) {
   # List all Excel files in the folder
   files <- list.files(path = folder_path, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
 
-  # Function to extract column names from each DBF file
+  # Function to extract column names from each excel file
   get_file_columns <- function(file_path) {
     tryCatch({
-      # Read the DBF file
+      # Read the excel file
       df <- read_excel(file_path)
       # Return the file name and column names
       data.frame(
@@ -658,7 +848,7 @@ process_folder <- function(folder_path) {
           column_names = NA  # If there's an error, return NA for column names
         )})}
 
-  # Apply the function to all DBF files and combine the results into a dataframe
+  # Apply the function to all excel files and combine the results into a dataframe
   file_info_df <- do.call(rbind, lapply(files, get_file_columns))
 
   return(file_info_df)}
@@ -678,12 +868,19 @@ eider_data_folders_2006.2015 <- c("data/Eider2006",
 # Apply the process_folder function to each folder and combine the results
 combined_eider_data_names_2006.2015 <- do.call(rbind, lapply(eider_data_folders_2006.2015, process_folder))
 
-# View the resulting combined dataframe
-print(combined_eider_data_names_2006.2015)
-#Dataframe includes folder names, file names of .dbf files within each folder, and column names within each file.
 
-####################################################################################
+```
+<details><summary>combined_eider_data_names_2006.2015 TABLE *(Click to expand)*</summary>
+```{r}
+knitr::kable(combined_eider_data_names_2006.2015)
+```
+</details>
 
+During the years 2006-2015, data was no longer input into the dBase database that is was during the previous years, and switched to being input into Microsoft excel spreadsheets. The code chunk above defines a function that identifies .xls and .xlsx file forms within a data folder, gathers all of the column names within each file, and creates a data frame that includes the folder name, file name, and a list of column names. This function is then applied to the data folders from years 2006-2015 and combined to create one data frame to display this information. 
+
+##### 9. 
+
+```{r}
 #Create a reference data frame with columns specified as needed in the project protocols
 #This data frame will have no data in it, it is just used as a guide to compare the collected data sets to
 
@@ -742,10 +939,15 @@ expected_columns_egg <- c("NEST_NO", "SPECIES", "OBS", "EGGNO", "LENGTH", "WIDTH
 egg_reference_df <- data.frame(matrix(ncol = length(expected_columns_egg), nrow = 0))
 colnames(egg_reference_df) <- expected_columns_egg
 
-########################################################################################
+```
 
+The code chunk above creates empty data frames for each of the data tables that include the column names defined in the project protocols. These are used as a guideline to compare the data collected to. This is the same process as in section 4. 
+
+##### 10a. 
+
+```{r}
 #Compare the excel files stored in the "data" folder to the reference data frames to identify differences
-#Differences will be defined as "missing" or "extra"
+#Differences will be defined as "missing in reference" and "missing in excel" 
 #############
 #comparing Header excel files to reference files
 
@@ -759,7 +961,7 @@ Header_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.2015,
 # View the filtered list of excel files with 'header' in the name
 print(Header_excel_files_eider2006.2015)
 
-#Comparing columns of the Header files to the Header reference dataframe
+#Comparing columns of the Header files to the Header reference data frame
 
 # Function to compare column names of a excel file with the reference data frame
 compare_columns <- function(excel_file, Header_reference_df) {
@@ -785,13 +987,26 @@ compare_columns <- function(excel_file, Header_reference_df) {
   )
 }
 
-# Apply the comparison function to all filtered .dbf files with 'header' in the name
+# Apply the comparison function to all filtered excel files with 'header' in the name
 Header_comparison_results2006.2015 <- lapply(Header_excel_files_eider2006.2015, compare_columns, Header_reference_df = Header_reference_df)
 #years 2006, 2009-2015 are missing the field: STUDYAREA which will need to be added to those years of data. All data was collected on KIGI
 #years 2009-2015 have columns "NEST #" and "NEST SITE" which will need to be changed slightly to "NEST_NO" and "SITE" to match reference df
 #There are several columns in each excel file that do not occur in the reference df, these will be combined using NAs if it is for data that was not collected in every year.
 
-#####################
+```
+<details><summary>Header_comparison_results2006.2015 LIST *(Click to expand)*</summary>
+```{r}
+print(Header_comparison_results2006.2015)
+```
+</details>
+
+The code chunk above compares the “Header” data files from years 2006-2015 to the reference data frame created in section 10. This allows us to identify any discrepancies in column names that could affect the compiling process. This code loops through the data folders and identifies the file names with the word “header” in the name, then prints a list of the files to confirm that a data file from each year has successfully been identified; creates a function that compares the column names in each data file to the reference data frame; then applies that function to the header data file from each year and creates a data list that identifies the discrepancies. The results are outlined by file name, the column names that are missing in the reference table, and the column names that are missing in the excel file. Any column names that are missing in the excel file are compared to the names that are missing in the reference file. If there are column names that are labeled in a different name but collect the same data, the column names in the data frame can be changed to match; any column names that appear to be missing in the excel file and do not seem to correlate with a column that is missing in the reference, are columns of data that were not collected or input during that years’ data collection.
+
+For the header data collected in 2006, 2009, and 2010-2015 the field, "STUDYAREA" does not exist. For these years, this missing data can be input as an NAs or it could be assumed that the study area is Kigigak Island, as that is where all the data comes from. For the years 2009-2015, the fields "NEST_NO" and "SITE" are missing from the excel files. These fields were determined to have differing names of "NEST #" and "NEST SITE" that can be altered to match. 
+
+##### 10b. 
+
+```{r}
 #comparing markdata excel files to reference files
 
 # List all excel files from those folders, including only files that have 'markdata' in the name
@@ -804,7 +1019,7 @@ markdata_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.201
 # View the filtered list of excel files with 'markdata' in the name
 print(markdata_excel_files_eider2006.2015)
 
-#Comparing columns of the Header files to the markdata reference dataframe
+#Comparing columns of the Header files to the markdata reference data frame
 
 # Function to compare column names of a excel file with the reference data frame
 compare_columns <- function(excel_file, markdata_reference_df) {
@@ -837,9 +1052,22 @@ markdata_comparison_results2006.2015 <- lapply(markdata_excel_files_eider2006.20
 #years 2009-2011 columns 'NASAL' 'TARSAL' 'NEST #' 'BAND NUMBER' 'SPECIES' need changed to 'NASALCODE' 'TARSALCODE' 'NEST_NO' 'BANDNUMBER' 'SPECIESCOD'
 #years 2012-2014 columns 'NASAL' 'TARSAL' 'NEST #' 'BAND NUMBER' 'SPECIES' 'WT (G)' CULMEN (MM)' 'TARSUS (MM)' need changed to 'NASALCODE' 'TARSALCODE' 'NEST_NO' 'BANDNUMBER' 'SPECIESCOD' 'WT' 'CULMEN' 'TARSUS'
 
+```
+<details><summary>markdata_comparison_results2006.2015 LIST *(Click to expand)*</summary>
+```{r}
+print(markdata_comparison_results2006.2015)
+```
+</details>
 
-############################
+The code chunk above compares the “markdata” data files from years 2006-2015 to the reference data frame created in section 10. This follows the same structure and serves the same function as comparing the ‘header’ data in section 11a.
 
+There was no markdata collected in years 2007 and 2015. In 2006 and 2008 the fields 'NASAL' and 'TARSAL' can be renamed to the missing, 'NASALCODE' and 'TARSALCODE'. In the years 2009-2011 the fields 'NASAL', 'TARSAL', 'TARSAL', 'NEST #', 'BAND NUMBER', and 'SPECIES' can be renamed to the missing, 'NASALCODE', 'TARSALCODE', 'NEST_NO', 'BANDNUMBER', and 'SPECIESCOD'. In years 2012-2014 the fields 'NASAL', 'TARSAL', 'NEST #', 'BAND NUMBER', 'SPECIES', 'WT(g)', 'CULMEN (MM)', and 'TARSUS (MM)' can be renamed to the missing, 'NASALCODE', 'TARSALCODE', 'NEST_NO', 'BANDNUMBER', 'SPECIESCOD', 'WT', 'CULMEN', AND 'TARSUS'. 
+
+There were also several fields that were missing from the excel file and had no correlating fields that simply had a different label but collected the same data. This indicates that this data was not collected during those years. These fields include, in 2006 'WING'; in 2008, 'WING', 'AGE', and 'SEX'; and in 2009-2014 'WING', 'AGE', 'SEX', AND 'PREFIXNUMB'. When combining the data files, these fields can be input with NAs.
+
+##### 10C.
+
+```{r}
 #comparing resight excel files to reference files
 
 # List all excel files from those folders, including only files that have 'resight' in the name
@@ -881,9 +1109,22 @@ compare_columns <- function(excel_file, resight_reference_df) {
 # Apply the comparison function to all filtered excel files with 'resight' in the name
 resight_comparison_results2006.2015 <- lapply(resight_excel_files_eider2006.2015, compare_columns, resight_reference_df = resight_reference_df)
 
+```
+<details><summary>resight_comparison_results2006.2015 LIST *(Click to expand)*</summary>
+```{r}
+print(resight_comparison_results2006.2015)
+```
+</details>
 
-################################
+The code chunk above compares the “resight” data files from years 2006-2015 to the reference data frame created in section 10. This follows the same structure and serves the same function as comparing the ‘header’ and 'markdata'.
 
+There was no resight data collected in the year 2009. In 2006 and 2007 the field 'TARSAL' can be renamed to the missing, 'TARSALCODE'. From 2010-2015, the fields 'NEST #' and 'TARSAL' can be renamed to the missing 'NEST_NO' and 'TARSALCODE'. 
+
+There were also several fields that were missing from the excel file and had no correlating fields that simply had a different label but collected the same data. This indicates that this data was not collected during those years. These fields include 'CAPTURE' and 'TIME' in 2006. In 2008, the missing fields include, 'CAPTURE', 'TARSALCODE', 'NASAL', 'SEX', 'TIME', and 'ASSOC'. In years 2010-2015 the missing fields inlcude, 'CAPTURE', 'FIRST_MARK', 'SEX', 'TIME', 'ASSOC', and 'COMMENTS'. 
+
+##### 10d. 
+
+```{r}
 #comparing Visit excel files to reference files
 
 # List all excel files from those folders, including only files that have 'visit' in the name
@@ -925,7 +1166,22 @@ compare_columns <- function(excel_file, visit_reference_df) {
 # Apply the comparison function to all filtered excel files with 'visit' in the name
 visit_comparison_results2006.2015 <- lapply(visit_excel_files_eider2006.2015, compare_columns, visit_reference_df = visit_reference_df)
 
-########################################################################################
+```
+<details><summary>visit_comparison_results2006.2015 LIST *(Click to expand)*</summary>
+```{r}
+print(visit_comparison_results2006.2015)
+```
+</details>
+
+The code chunk above compares the “visit” data files from years 2006-2015 to the reference data frame created in section 10. This follows the same structure and serves the same function as comparing the ‘header’, 'markdata', and 'resight' data.
+
+There are two excel files saved with the word 'visit' in the name in the year 2007. The data collected from 2006-2008 include at least all of the fields specified by the protocols. From 2009-2015, fields 'NEST #', 'TOTAL EGGS', 'NEW EGGS', 'HEN STATUS', 'NEST STATUS' can be changed into the missing, 'NEST_NO', 'NO_EGGS', 'EGGS_NEW', 'HEN_STATUS', and 'STATUS'. 
+
+There were also several fields that were missing from the excel file and had no correlating fields that simply had a different label but collected the same data. This indicates that this data was not collected during those years. From 2009-2015 these fields include 'WARM', 'DOWN', 'DRAKE'. 
+
+##### 11a. 
+
+```{r}
 #Combining the excel files from each year into one data frame for respective category (e.g. 'Header' data)
 
 ########################
@@ -940,7 +1196,7 @@ all_columns <- NULL
 # Define a mapping of column names that should be unified across all files
 # This is a list where the key is the original column name and the value is the new standardized column name
 column_rename_map <- list(
-  "Northing" = "NORTHING",   # Rename'Northing' to 'NORTHING'
+  "Northing" = "NORTHING",   # Rename 'Northing' to 'NORTHING'
   "Easting" = "EASTING",     # Rename 'Easting' to 'EASTING'
   "Nest #" = "NEST_NO",      # Rename 'Nest #' to 'NEST_NO'
   "Nest Site" = "SITE"       # Rename 'Nest Site' to 'SITE'
@@ -950,7 +1206,7 @@ column_rename_map <- list(
 
 # First loop: Collect all unique column names across all files
 for (file in Header_excel_files_eider2006.2015) {
-  # Read the .dbf files into a data frame
+  # Read the excel files into a data frame
   df <- read_excel(file)
 
   # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
@@ -1035,583 +1291,11 @@ for (i in 1:length(header_data_list2006.2015)) {
 # Combine all the data frames into one
 header_combined_data2006.2015 <- bind_rows(header_data_list2006.2015)
 
-#############################
-#Combining all "Markdata" data from 2006-2015
-
-# Initialize an empty list to store data frames
-markdata_data_list2006.2015 <- list()
-
-# Initialize an empty vector to store all possible column names
-all_columns <- NULL
-
-# Define a mapping of column names that should be unified across all files
-# This is a list where the key is the original column name and the value is the new standardized column name
-column_rename_map_markdata <- list(
-  "NASAL" = "NASALCODE",
-  "TARSAL" = "TARSALCODE",
-  "Nest #" = "NEST_NO",
-  "Band Number" = "BANDNUMBER",
-  "SPECIES" = "SPECIESCOD",
-  "WT(g)" = "WT",
-  "CULMEN (mm)" = "CULMEN",
-  "TARSUS (mm)" = "TARSUS",
-  "PLOT #" = "PLOT"
-)
-
-
-# First loop: Collect all unique column names across all files
-for (file in markdata_excel_files_eider2006.2015) {
-  # Read the excel files into a data frame
-  df <- read_excel(file)
-
-  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
-  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
-
-  # Add the folder name (year) as a new column
-  df$YEAR <- folder_name
-
-  # Apply column renaming based on the predefined mapping
-  colnames(df) <- sapply(colnames(df), function(x) {
-    if (x %in% names(column_rename_map_markdata)) {
-      return(column_rename_map_markdata[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Standardize 'RECAP' column to logical type if it exists
-  if ("RECAP" %in% colnames(df)) {
-    df$RECAP <- as.logical(df$RECAP)  # Convert 'RECAP' to logical (TRUE/FALSE)
-  } else {
-    df$RECAP <- NA  # If 'RECAP' doesn't exist, assign NA
-  }
-
-  # Standardize 'EASTING' column to numeric type if it exists
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)  # Convert 'EASTING' to numeric
-  } else {
-    df$EASTING <- NA  # If 'EASTING' doesn't exist, assign NA
-  }
-
-  # Standardize 'PLOT' column to character type if it exists
-  if ("PLOT" %in% colnames(df)) {
-    df$PLOT <- as.character(df$PLOT)  # Convert 'PLOT' to character
-  } else {
-    df$PLOT <- NA  # If 'PLOT' doesn't exist, assign NA
-  }
-
-  # Store all column names to determine the full set of columns
-  all_columns <- union(all_columns, colnames(df))
-
-  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
-  colnames(df) <- make.names(colnames(df), unique = TRUE)
-
-  # Add missing columns (if any) and fill them with NA
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Store the modified data frame in the list
-  markdata_data_list2006.2015[[file]] <- df
-}
-
-# Second loop: Adjust data frames to match the full set of columns and ensure column types are consistent
-for (i in 1:length(markdata_data_list2006.2015)) {
-  df <- markdata_data_list2006.2015[[i]]
-
-  # Apply column renaming again in case any file had other inconsistent names
-  colnames(df) <- sapply(colnames(df), function(x) {
-    if (x %in% names(column_rename_map_markdata)) {
-      return(column_rename_map_markdata[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Ensure all columns have the same names as in all_columns
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Standardize specific columns to appropriate types:
-
-  # Ensure 'RECAP' is standardized to logical type
-  if ("RECAP" %in% colnames(df)) {
-    df$RECAP <- as.logical(df$RECAP)
-  }
-
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-
-  # Clean and standardize 'PLOT' column to numeric type, replacing invalid entries with NA
-  if ("PLOT" %in% colnames(df)) {
-    # Convert 'PLOT' to numeric, replacing non-numeric entries with NA
-    df$PLOT <- as.character(df$PLOT)  # Ensure it's character type first
-    df$PLOT <- trimws(df$PLOT)  # Remove any leading or trailing spaces
-
-  }
-
-  # Add the updated data frame back to the list
-  markdata_data_list2006.2015[[i]] <- df
-}
-
-# Now, combine all the data frames into one
-markdata_combined_data2006.2015 <- bind_rows(markdata_data_list2006.2015)
-
-
-
-##################################
-#Combining all "resight" data from 2006-2015
-
-# Initialize an empty list to store data frames
-resight_data_list2006.2015 <- list()
-
-# Initialize an empty vector to store all possible column names
-all_columns <- NULL
-
-# Define a mapping of column names that should be unified across all files
-# This is a list where the key is the original column name and the value is the new standardized column name
-column_rename_map_resight <- list(
-  "TARSAL" = "TARSALCODE",
-  "Nest #" = "NEST_NO",
-  "PLOT #" = "PLOT"
-)
-
-
-# First loop: Collect all unique column names across all files
-for (file in resight_excel_files_eider2006.2015) {
-  # Read the .dbf files into a data frame
-  df <- read_excel(file)
-
-  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
-  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
-
-  # Add the folder name (year) as a new column
-  df$Year <- folder_name
-
-  # Apply column renaming based on the predefined mapping
-  colnames(df) <- sapply(colnames(df), function(x) {
-    # Use the map if the column exists in the rename map, otherwise leave as is
-    if (x %in% names(column_rename_map_resight)) {
-      return(column_rename_map_resight[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Store all column names to determine the full set of columns
-  all_columns <- union(all_columns, colnames(df))
-
-  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
-  colnames(df) <- make.names(colnames(df), unique = TRUE)
-
-  # Add missing columns (if any) and fill them with NA
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Store the modified data frame in the list
-  resight_data_list2006.2015[[file]] <- df
-}
-
-# Second loop: Adjust data frames to match the full set of columns
-for (i in 1:length(resight_data_list2006.2015)) {
-  df <- resight_data_list2006.2015[[i]]
-
-  # Apply column renaming again in case any file had other inconsistent names
-  colnames(df) <- sapply(colnames(df), function(x) {
-    if (x %in% names(column_rename_map_resight)) {
-      return(column_rename_map_resight[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Ensure all columns have the same names as in all_columns
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Standardize 'DATE' column to Date type
-  if ("DATE" %in% colnames(df)) {
-    df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
-  }
-
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-
-  # Standardize 'PLOT' column to character type if it exists
-  if ("PLOT" %in% colnames(df)) {
-    df$PLOT <- as.character(df$PLOT)  # Convert 'PLOT' to character
-  } else {
-    df$PLOT <- NA  # If 'PLOT' doesn't exist, assign NA
-  }
-
-  # Add the updated data frame back to the list
-  resight_data_list2006.2015[[i]] <- df
-}
-
-# Combine all the data frames into one
-resight_combined_data2006.2015 <- bind_rows(resight_data_list2006.2015)
-
-
-#####################################
-#Combining all "Visit" data from 2006-2015
-
-# Initialize an empty list to store data frames
-visit_data_list2006.2015 <- list()
-
-# Initialize an empty vector to store all possible column names
-all_columns <- NULL
-
-# Define a mapping of column names that should be unified across all files
-# This is a list where the key is the original column name and the value is the new standardized column name
-column_rename_map_visit <- list(
-  "Nest #" = "NEST_NO",
-  "HEN STATUS" = "HEN_STATUS",
-  "Total..Eggs" = "NO_EGGS",
-  "New Eggs" = "EGGS_NEW",
-  "NEST STATUS" = "STATUS",
-  "VISIT #" = "VISIT",
-  "Total...Eggs" = "NO_EGGS"
-)
-
-
-# First loop: Collect all unique column names across all files
-for (file in visit_excel_files_eider2006.2015) {
-  # Read the .dbf files into a data frame
-  df <- read_excel(file)
-
-  # Extract the year (from folder name) from the file path (e.g., "1994" from "Eider1994")
-  folder_name <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
-
-  # Add the folder name (year) as a new column
-  df$Year <- folder_name
-
-  # Apply column renaming based on the predefined mapping
-  colnames(df) <- sapply(colnames(df), function(x) {
-    # Use the map if the column exists in the rename map, otherwise leave as is
-    if (x %in% names(column_rename_map_visit)) {
-      return(column_rename_map_visit[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Store all column names to determine the full set of columns
-  all_columns <- union(all_columns, colnames(df))
-
-  # Handle duplicate or unnamed columns (e.g., `...9`, `...19`)
-  colnames(df) <- make.names(colnames(df), unique = TRUE)
-
-  # Add missing columns (if any) and fill them with NA
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Store the modified data frame in the list
-  visit_data_list2006.2015[[file]] <- df
-}
-
-# Second loop: Adjust data frames to match the full set of columns
-for (i in 1:length(visit_data_list2006.2015)) {
-  df <- visit_data_list2006.2015[[i]]
-
-  # Apply column renaming again in case any file had other inconsistent names
-  colnames(df) <- sapply(colnames(df), function(x) {
-    if (x %in% names(column_rename_map_visit)) {
-      return(column_rename_map_visit[[x]])
-    } else {
-      return(x)
-    }
-  })
-
-  # Ensure all columns have the same names as in all_columns
-  missing_columns <- setdiff(all_columns, colnames(df))
-  for (col in missing_columns) {
-    df[[col]] <- NA
-  }
-
-  # Standardize column types where necessary
-  # Example: Standardize 'Total..Eggs' column to numeric (double)
-  if ("NO_EGGS" %in% colnames(df)) {
-    df$NO_EGGS <- as.double(df$NO_EGGS)
-  }
-
-  # Example: Standardize 'Missing..Eggs' column to numeric (double)
-  if ("Missing..Eggs" %in% colnames(df)) {
-    df$`Missing..Eggs` <- as.double(df$`Missing..Eggs`)
-  }
-
-  # Standardize 'Depredated.Eggs'
-  if ("Depredated.Eggs" %in% colnames(df)) {
-    df$`Depredated.Eggs` <- as.double(df$`Depredated.Eggs`)
-  }
-
-  # Standardize 'Inviable.Eggs'
-  if ("Inviable.Eggs" %in% colnames(df)) {
-    df$`Inviable.Eggs` <- as.double(df$`Inviable.Eggs`)
-  }
-
-  # Standardize 'Unknown.Eggs'
-  if ("Unknown.Eggs" %in% colnames(df)) {
-    df$Unknown.Eggs <- as.double(df$Unknown.Eggs)
-  }
-
-  # Standardize 'Unknown.Eggs'
-  if ("Aband.Eggs" %in% colnames(df)) {
-    df$`Aband.Eggs` <- as.double(df$`Aband.Eggs`)
-  }
-
-  # Standardize 'CANDLE2'
-  if ("CANDLE2" %in% colnames(df)) {
-    df$CANDLE2 <- as.double(df$CANDLE2)
-  }
-
-  # Standardize 'VISIT'
-  if ("VISIT" %in% colnames(df)) {
-    df$VISIT <- as.double(df$VISIT)
-  }
-
-  # Standardize 'DATE' column to Date type
-  if ("DATE" %in% colnames(df)) {
-    df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
-  }
-
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-
-  # Add the updated data frame back to the list
-  visit_data_list2006.2015[[i]] <- df
-}
-
-# Combine all the data frames into one
-visit_combined_data2006.2015 <- bind_rows(visit_data_list2006.2015)
-
-
-#'###########################################################################################
-#'###########################################################################################
-#' Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
-#' Contents: [Combining the data frames compiled from years 1994-2005 and 2006-2015]
-#'  - Installing and loading packages required for the following code.
-#'  - Combining the header data
-#'    - Converting the form of the "PHOTO" column data to be standard to combine dataframes
-#'    - Combining dataframes from 1994-2005 and 2006-2015
-#'    - Converting the Easting Northing values to Latitude Longitude in decimal degrees
-#'  -Combining the markdata dataframes
-#'    - Combining markdata datadrames from 1994-2005 and 2006-2015
-#'    - Adjusting some of the date data that was incorrectly input. (Year 1900=2000 and 1902=2002)
-#'    - Combining the prefix number and remainder of band number columns to get a column with entire band number
-#'    - Combining band number and date to create a unique identifying column and ensuring there is no repeating data
-#'    - Converting Northing and Easting values to Latitute Longitude in decimal degrees
-#'  -Combining resight data
-#'    - Combining resight dateframes from 1994-2005 and 2006-2015
-#'    - Converting Northing and Easting values to Latitute Longitude in decimal degrees
-#'  - Combining visit data
-#'    - Converting data in "PHOTO" column to character to be standard for compilation
-#'    - Combining visit dataframes from 1994-2005 and 2006-2015
-#'    - Converting Northing and Easting values to Latitude Longitude in decimal degrees
-#'
-#'  Author: [Ali McCarron]
-#'
-#'######################################################################################
-
-################################
-
-#Combining header data from 1994-2005 and 2006-2015
-
-# Convert the PHOTO column to character in both data frames
-header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.2005$PHOTO)
-header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
-
-# Now combine the data frames
-combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
-
-#Converting NA values to a placeholder value
-combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
-combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-
-
-
-##################################
-
-#Combining markdata data from 1994-2005 and 2006-2015
-
-combined_markdata_total <- bind_rows(markdata_combined_data1994.2005, markdata_combined_data2006.2015)
-
-#Changing the date from "1900" to "2000" for data collected in 2000
-
-combined_markdata_total <- combined_markdata_total %>%
-  mutate(DATE = case_when(
-    year(DATE) == 1900 ~ update(DATE, year = 2000),
-    year(DATE) == 1902 ~ update(DATE, year = 2002),
-    TRUE ~ DATE
-  ))
-
-#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU" column to create a column that includes the entire band number
-combined_markdata_total$BANDNU <- paste0(combined_markdata_total$PREFIXNUMB, combined_markdata_total$BANDNUMBER)
-
-# Combine BANDNU and DATE into a unique ID column, labeled "MARK_ID"
-combined_markdata_total$MARK_ID <- paste(combined_markdata_total$BANDNU, combined_markdata_total$DATE,
-                                         sep = "_")
-
-#Moving "MARK_ID" to front of datafram for ease of viewing
-combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
-#Ensure there are no repeated rows of data by "MARK_ID"
-combined_markdata_total <- combined_markdata_total %>% distinct(MARK_ID, .keep_all = TRUE)
-
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_markdata_total$EASTING[is.na(combined_markdata_total$EASTING)] <- 0
-combined_markdata_total$NORTHING[is.na(combined_markdata_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_markdata_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_markdata_total$LATITITUDE <- st_coordinates(sf_combined)[,2]
-combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
-combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
-
-
-###################################
-
-#combining resight data from 1994-2005 and 2006-2015
-
-#standardizing the NORTHING column to be able to combine
-resight_combined_data1994.2005$NORTHING <- as.character(resight_combined_data1994.2005$NORTHING)
-resight_combined_data2006.2015$NORTHING <- as.character(resight_combined_data2006.2015$NORTHING)
-
-#combining data frames
-combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
-
-#Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
-combined_resight_data_total <- combined_resight_data_total %>%
-  mutate(DATE = case_when(
-    year(DATE) == 1900 ~ update(DATE, year = 2000),
-    year(DATE) == 1902 ~ update(DATE, year = 2002),
-    TRUE ~ DATE
-  ))
-
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
-combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-
-
-####################################
-
-#Combining visit data from 1994-2005 and 2006-2015
-
-# Convert the PHOTO column to character in both data frames
-visit_combined_data1994.2005$PHOTO <- as.character(visit_combined_data1994.2005$PHOTO)
-visit_combined_data2006.2015$PHOTO <- as.character(visit_combined_data2006.2015$PHOTO)
-
-#Convert TIME column to integer in both data frames
-visit_combined_data1994.2005$TIME <- as.integer(visit_combined_data1994.2005$TIME)
-visit_combined_data2006.2015$TIME <- as.integer(visit_combined_data2006.2015$TIME)
-
-#Convert CANDLE2 column to integer in both data frames
-visit_combined_data1994.2005$CANDLE2 <- as.double(visit_combined_data1994.2005$CANDLE2)
-visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$CANDLE2)
-
-#Combining the two data frames into one
-combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
-
-#Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
-combined_visit_data_total <- combined_visit_data_total %>%
-  mutate(DATE = case_when(
-    year(DATE) == 1900 ~ update(DATE, year = 2000),
-    year(DATE) == 1902 ~ update(DATE, year = 2002),
-    TRUE ~ DATE
-  ))
-
-#Creating a unique ID column by combining NEST_NO and DATE
-combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$NEST_NO, combined_visit_data_total$DATE,
-                                         sep = "_")
-#Ensure there are no repeated rows of data by "VISIT_ID"
-combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
-
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
-combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-
-
+```
+<details><summary>header_combined_data2006.2015 TABLE *(Click to expand)*</summary>
+```{r}
+#knitr:: kable(header_combined_data2006.2015)
+```
+</details>
+
+The code chunk above, processes the header excel files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'Header_excel_files_eider2006.2015' created in 10a, then creates a new column in each file with the year, extracted from the folder name. Then all of the column names in each data frame are checked, and renamed according the column_rename_map. 

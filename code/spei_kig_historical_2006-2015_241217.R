@@ -1,9 +1,12 @@
 #'#####################################################################################
 #' Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
-#' Contents:
+#' Contents: [Standardizing and Compiling data files collected from years 2006-2015 ("Excel years")]
 #'  - Identifying all file types in folders from Eider2006-Eider2015
 #'  - Identifying file names and column names within each file for the .xls and .xlsx files from folders Eider2006-Eider2015
-#'  -
+#'  - Creating reference data frame for each of the tables to identify each of the required column names
+#'  - Compare the excel files stored in the "data" folder to the reference data frames to identify differences
+#'  - Combining the excel files from each year into one data frame for respective category (e.g. 'Header' data)
+#'    - Standardizing various data types as needed
 #'  Author: [Ali McCarron]
 #'
 #'######################################################################################
