@@ -193,7 +193,7 @@ combined_visit_data_total <- combined_visit_data_total %>%
   ))
 
 #Creating a unique ID column by combining NEST_NO and DATE
-combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$NEST_NO, combined_visit_data_total$DATE,
+combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, combined_visit_data_total$NEST_NO,
                                          sep = "_")
 #Ensure there are no repeated rows of data by "VISIT_ID"
 combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)

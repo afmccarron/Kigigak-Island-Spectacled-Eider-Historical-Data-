@@ -1838,3 +1838,222 @@ sapply(package_vec, install.load.package)
 ```
 
 The code section above outlines the packages needed for the following section. It is structured for reproducibility on different machines; loading the required packages, and if needed, installing them first.
+
+
+##### 14.
+
+```{r}
+#Combining header data from 1994-2005 and 2006-2015
+
+# Convert the PHOTO column to character in both data frames
+header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.2005$PHOTO)
+header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
+
+#Convert EASTING columns to character in both data frames
+header_combined_data1994.2005$EASTING <- as.integer(header_combined_data1994.2005$EASTING)
+header_combined_data2006.2015$EASTING <- as.integer(header_combined_data2006.2015$EASTING)
+
+#Convert NORTHING columns to character in both data frames
+header_combined_data1994.2005$NORTHING <- as.integer(header_combined_data1994.2005$NORTHING)
+header_combined_data2006.2015$NORTHING <- as.integer(header_combined_data2006.2015$NORTHING)
+
+# Now combine the data frames
+combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
+
+#Converting NA values to a placeholder value
+combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
+combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+
+```
+<details><summary>combined_header_data_total TABLE *(Click to expand)*</summary>
+```{r}
+knitr:: kable(combined_header_data_total)
+```
+</details>
+
+The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+
+##### 15. 
+
+```{r}
+#Combining markdata data from 1994-2005 and 2006-2015
+
+combined_markdata_total <- bind_rows(markdata_combined_data1994.2005, markdata_combined_data2006.2015)
+
+#Changing the date from "1900" to "2000" for data collected in 2000
+
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(DATE = case_when(
+    year(DATE) == 1900 ~ update(DATE, year = 2000),
+    year(DATE) == 1902 ~ update(DATE, year = 2002),
+    TRUE ~ DATE
+  ))
+
+#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU" column to create a column that includes the entire band number
+combined_markdata_total$BANDNU_COMPLETE <- paste0(combined_markdata_total$PREFIXNUMB, combined_markdata_total$BANDNUMBER)
+
+# Combine BANDNU and DATE into a unique ID column, labeled "MARK_ID"
+combined_markdata_total$MARK_ID <- paste(combined_markdata_total$BANDNU_COMPLETE, combined_markdata_total$DATE,
+                                         sep = "_")
+
+#Moving "MARK_ID" to front of datafram for ease of viewing
+combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
+#Ensure there are no repeated rows of data by "MARK_ID"
+combined_markdata_total <- combined_markdata_total %>% distinct(MARK_ID, .keep_all = TRUE)
+
+#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_markdata_total$EASTING[is.na(combined_markdata_total$EASTING)] <- 0
+combined_markdata_total$NORTHING[is.na(combined_markdata_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_markdata_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_markdata_total$LATITITUDE <- st_coordinates(sf_combined)[,2]
+combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+
+```
+<details><summary>combined_markdata_total TABLE *(Click to expand)*</summary>
+```{r}
+knitr:: kable(combined_markdata_total)
+```
+</details>
+
+The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' column to create a new, unique identifying column, 'MARK_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+
+##### 16.
+
+```{r}
+#combining resight data from 1994-2005 and 2006-2015
+
+#standardizing the NORTHING column to be able to combine
+resight_combined_data1994.2005$NORTHING <- as.character(resight_combined_data1994.2005$NORTHING)
+resight_combined_data2006.2015$NORTHING <- as.character(resight_combined_data2006.2015$NORTHING)
+
+#combining data frames
+combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
+
+#Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(DATE = case_when(
+    year(DATE) == 1900 ~ update(DATE, year = 2000),
+    year(DATE) == 1902 ~ update(DATE, year = 2002),
+    TRUE ~ DATE
+  ))
+
+#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
+combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+
+
+```
+<details><summary>combined_resight_data_total TABLE *(Click to expand)*</summary>
+```{r}
+knitr:: kable(combined_resight_data_total)
+```
+</details>
+
+The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+
+
+##### 17.
+
+```{r}
+#Combining visit data from 1994-2005 and 2006-2015
+
+# Convert the PHOTO column to character in both data frames
+visit_combined_data1994.2005$PHOTO <- as.character(visit_combined_data1994.2005$PHOTO)
+visit_combined_data2006.2015$PHOTO <- as.character(visit_combined_data2006.2015$PHOTO)
+
+#Convert TIME column to integer in both data frames
+visit_combined_data1994.2005$TIME <- as.integer(visit_combined_data1994.2005$TIME)
+visit_combined_data2006.2015$TIME <- as.integer(visit_combined_data2006.2015$TIME)
+
+#Convert CANDLE2 column to integer in both data frames
+visit_combined_data1994.2005$CANDLE2 <- as.double(visit_combined_data1994.2005$CANDLE2)
+visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$CANDLE2)
+
+#Combining the two data frames into one
+combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
+
+#Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(DATE = case_when(
+    year(DATE) == 1900 ~ update(DATE, year = 2000),
+    year(DATE) == 1902 ~ update(DATE, year = 2002),
+    TRUE ~ DATE
+  ))
+
+#Creating a unique ID column by combining NEST_NO and DATE
+combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, combined_visit_data_total$NEST_NO,
+                                         sep = "_")
+#Ensure there are no repeated rows of data by "VISIT_ID"
+combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
+
+#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
+combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+
+```
+<details><summary>combined_visit_data_total TABLE *(Click to expand)*</summary>
+```{r}
+knitr:: kable(combined_visit_data_total)
+```
+</details>
+
+The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
