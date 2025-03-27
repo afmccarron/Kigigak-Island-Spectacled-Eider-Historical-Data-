@@ -35,7 +35,7 @@ install.load.package <- function(x) {
   require(x, character.only = TRUE)
 }
 
-package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf")
+package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf", "leaflet")
 sapply(package_vec, install.load.package)
 
 ################################
@@ -75,7 +75,24 @@ combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_header_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "blue",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
+  )
 
+#Remove columns that have only NAs
+combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.)))
+
+#Export combined data frame to .csv
+write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
 
 ##################################
 
@@ -92,17 +109,18 @@ combined_markdata_total <- combined_markdata_total %>%
     TRUE ~ DATE
   ))
 
-#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU" column to create a column that includes the entire band number
+#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU_COMPLETE" column to create a column that includes the entire band number
 combined_markdata_total$BANDNU_COMPLETE <- paste0(combined_markdata_total$PREFIXNUMB, combined_markdata_total$BANDNUMBER)
 
-# Combine BANDNU and DATE into a unique ID column, labeled "MARK_ID"
-combined_markdata_total$MARK_ID <- paste(combined_markdata_total$BANDNU, combined_markdata_total$DATE,
+# Combine BANDNU_COMPLETE and DATE into a unique ID column, labeled "MARK_ID"
+combined_markdata_total$MARK_ID <- paste(combined_markdata_total$DATE,
+                                         combined_markdata_total$BANDNU_COMPLETE,
+                                         combined_markdata_total$NEST_NO,
                                          sep = "_")
 
-#Moving "MARK_ID" to front of datafram for ease of viewing
+#Moving "MARK_ID" to front of data frame for ease of viewing
 combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
-#Ensure there are no repeated rows of data by "MARK_ID"
-combined_markdata_total <- combined_markdata_total %>% distinct(MARK_ID, .keep_all = TRUE)
+
 
 #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
@@ -124,6 +142,27 @@ combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_markdata_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LONGITUDE,
+    lat = ~LATITITUDE,
+    radius = 4,
+    color = "yellow",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
+  )
+
+#Remove columns that have only NAs
+combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
+  #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
+  combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
+
+
+#Exporting combined data frame to .csv
+write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
 
 ###################################
 
@@ -144,7 +183,15 @@ combined_resight_data_total <- combined_resight_data_total %>%
     TRUE ~ DATE
   ))
 
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+#Combining columns 'TARSUS', 'TARSAL', and 'TARSALCODE', as they collect the same data.
+combined_resight_data_total$TARSALCODE <-
+  coalesce(combined_resight_data_total$TARSUS, combined_resight_data_total$TARSAL)
+  #Dropping original 'TARSUS' and 'TARSAL' columns, as they are redundant now
+combined_resight_data_total <- combined_resight_data_total %>%
+  select(-TARSUS, -TARSAL)
+
+
+ #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
 combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
@@ -164,6 +211,24 @@ combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_resight_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 4,
+    color = "red",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
+  )
+
+#Remove columns that have only NAs
+combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.)))
+
+#Export the combined data frame to .csv
+write.csv(combined_resight_data_total, "output/combined_resight_data_1994-2015.csv")
 
 ####################################
 
@@ -197,6 +262,8 @@ combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, comb
                                          sep = "_")
 #Ensure there are no repeated rows of data by "VISIT_ID"
 combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
+#Move the "VISIT_ID" column to the left for ease of viewing
+combined_visit_data_total <- combined_visit_data_total[, c("VISIT_ID", setdiff(names(combined_visit_data_total), "VISIT_ID"))]
 
 #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
@@ -218,4 +285,22 @@ combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_visit_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 4,
+    color = "pink",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
+  )
 
+#Remove columns that have only NAs
+combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
+
+
+#Export combined data frame as a .csv
+write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")

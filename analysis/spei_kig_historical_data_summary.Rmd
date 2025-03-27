@@ -15,7 +15,7 @@ The goal of this R script is to compile data collected from breeding Spectacled 
 
 To combine this data stored in inconsistent forms, this code is broken up into three different R scripts: "1_spei_kig_historical_1992-2005" which compiles and standardizes the "quack" years, "2_spei_kig_historical_2006-2015" which compiles and standardizes the "excel" years, and "3_spei_kig_historical_total" which uses the output from those parts to compile and complete the final databases that include data from all years collected. These scripts contain some dependencies on one another and should be run in order, according to the number prefix in the file names. 
 
-#### Part 1: 1_spei_kig_historical_1992-2005 
+### Part 1: 1_spei_kig_historical_1992-2005 
 ##### Table of contents
 Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
 
@@ -749,7 +749,7 @@ knitr::kable(egg_combined_data1994.2005)
 
 The code chunk above, processes the egg dbf files from years 1994-2005 and combines them into one data frame. This code first creates an empty list in which to store the data frames created from each year, then loops through each of dbf files and reads them from the egg_dbf_files_eider1994.2005 value created in 5e. I modify the data frame by adding a column: 'Year' to ensure that the data remains organized to the year that is was collected in. The year is extracted from the folder name. The modified data frames were then attempted to combine and an error occurred specifying that the data type in the "EGGNO" column was not consistent across all data frames. Code was then added to convert the data in the "EGGNO" column to a consistent integer data form. 
 
-#### Part 2: 2_spei_kig_historical_2006-2015
+### Part 2: 2_spei_kig_historical_2006-2015
 ##### Table of Contents:
 Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
 
@@ -1805,7 +1805,7 @@ knitr:: kable(visit_combined_data2006.2015)
 
 The code chunk above processes the visit data files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. The code is then broken up into two loops. The first is initiated and reads through the list of excel files, "visit_excel_files_eider2006.2015" created in 11d, then creates a new column in each file with the year, extracted from the folder name. The column names are then cleaned up by removing any leading/trailing spaces or newline characters to make column names as standard as they can be for the combining process. All of the column names in each data frame are checked, and renamed according the column_rename_map_visit. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and added to the data frames with NAs. Due to some errors with combining columns using the bind_rows function later in this code, a line was added to ensure that the columns are put into the same order, making the bind_rows function properly. The second loop is then initiated and reads through the excel files again, cleans up the column names again, and applies the renaming map in case any file had other inconsistent names. It is checked that all the files now contain all the columns that are currently stored in the all_columns list. A series of code lines then follow that standardize the data type, in columns where it is necessary. These updated data frames are added to the visit_data_list2006.2015 list and we combine them into the visit_combined_data2006.2015 data frame. After the cumulative data frame is created, a unique identifying column is created by combining the DATE column and NEST_NO column. 
 
-#### Part 3: 3_spei_kig_historical_total
+### Part 3: 3_spei_kig_historical_total
 ##### Table of Contents:
 
 Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
@@ -1832,9 +1832,8 @@ install.load.package <- function(x) {
   require(x, character.only = TRUE)
 }
 
-package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf")
+package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf", "leaflet")
 sapply(package_vec, install.load.package)
-
 ```
 
 The code section above outlines the packages needed for the following section. It is structured for reproducibility on different machines; loading the required packages, and if needed, installing them first.
@@ -1878,6 +1877,25 @@ combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_header_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "blue",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
+  )
+
+#Remove columns that have only NAs
+combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.)))
+
+#Export combined data frame to .csv
+write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
+
 ```
 <details><summary>combined_header_data_total TABLE *(Click to expand)*</summary>
 ```{r}
@@ -1885,7 +1903,7 @@ knitr:: kable(combined_header_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the "output" folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder. 
 
 ##### 15. 
 
@@ -1903,17 +1921,18 @@ combined_markdata_total <- combined_markdata_total %>%
     TRUE ~ DATE
   ))
 
-#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU" column to create a column that includes the entire band number
+#Combining "PREFIXNUMB" and "BANDNUMBER" into the "BANDNU_COMPLETE" column to create a column that includes the entire band number
 combined_markdata_total$BANDNU_COMPLETE <- paste0(combined_markdata_total$PREFIXNUMB, combined_markdata_total$BANDNUMBER)
 
-# Combine BANDNU and DATE into a unique ID column, labeled "MARK_ID"
-combined_markdata_total$MARK_ID <- paste(combined_markdata_total$BANDNU_COMPLETE, combined_markdata_total$DATE,
+# Combine BANDNU_COMPLETE and DATE into a unique ID column, labeled "MARK_ID"
+combined_markdata_total$MARK_ID <- paste(combined_markdata_total$DATE,
+                                         combined_markdata_total$BANDNU_COMPLETE,
+                                         combined_markdata_total$NEST_NO,
                                          sep = "_")
 
-#Moving "MARK_ID" to front of datafram for ease of viewing
+#Moving "MARK_ID" to front of data frame for ease of viewing
 combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
-#Ensure there are no repeated rows of data by "MARK_ID"
-combined_markdata_total <- combined_markdata_total %>% distinct(MARK_ID, .keep_all = TRUE)
+
 
 #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
@@ -1935,6 +1954,28 @@ combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_markdata_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LONGITUDE,
+    lat = ~LATITITUDE,
+    radius = 4,
+    color = "yellow",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
+  )
+
+#Remove columns that have only NAs
+combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
+  #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
+  combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
+
+
+#Exporting combined data frame to .csv
+write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
+
 ```
 <details><summary>combined_markdata_total TABLE *(Click to expand)*</summary>
 ```{r}
@@ -1942,7 +1983,7 @@ knitr:: kable(combined_markdata_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' column to create a new, unique identifying column, 'MARK_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' and 'NEST_NO' columns to create a new, unique identifying column, 'MARK_ID'. However, many duplicates remain in this column, as there are oddities and inconsistencies with certain data entires, as well as NA values for either 'BANDNUMBER_COMPLETE', 'DATE', or 'NEST_NO'. Including three identifiers reduces the amount of duplicates by increasing specificity, however, there are still many and are being investigated through review of the hard copies. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Markdata' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NA values are removed from the table. After reviewing the table, there were also two columns that contain 0s in addition to NA values, where the 0s clearly did not represent data and were deemed equivilent to NA values; these columns were also removed. A usable, .csv, table is then written and exported to the "output" folder.    
 
 ##### 16.
 
@@ -1964,7 +2005,15 @@ combined_resight_data_total <- combined_resight_data_total %>%
     TRUE ~ DATE
   ))
 
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+#Combining columns 'TARSUS', 'TARSAL', and 'TARSALCODE', as they collect the same data.
+combined_resight_data_total$TARSALCODE <-
+  coalesce(combined_resight_data_total$TARSUS, combined_resight_data_total$TARSAL)
+  #Dropping original 'TARSUS' and 'TARSAL' columns, as they are redundant now
+combined_resight_data_total <- combined_resight_data_total %>%
+  select(-TARSUS, -TARSAL)
+
+
+ #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
 combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
@@ -1984,6 +2033,24 @@ combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_resight_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 4,
+    color = "red",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
+  )
+
+#Remove columns that have only NAs
+combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.)))
+
+#Export the combined data frame to .csv
+write.csv(combined_resight_data_total, "output/combined_resight_data_1994-2015.csv")
 
 ```
 <details><summary>combined_resight_data_total TABLE *(Click to expand)*</summary>
@@ -1992,7 +2059,7 @@ knitr:: kable(combined_resight_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Resight' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.  
 
 
 ##### 17.
@@ -2028,6 +2095,8 @@ combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, comb
                                          sep = "_")
 #Ensure there are no repeated rows of data by "VISIT_ID"
 combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
+#Move the "VISIT_ID" column to the left for ease of viewing
+combined_visit_data_total <- combined_visit_data_total[, c("VISIT_ID", setdiff(names(combined_visit_data_total), "VISIT_ID"))]
 
 #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
 
@@ -2049,6 +2118,26 @@ combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
 combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 
+#Plot the converted LAT LON values
+leaflet(combined_visit_data_total)%>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 4,
+    color = "pink",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
+  )
+
+#Remove columns that have only NAs
+combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
+
+
+#Export combined data frame as a .csv
+write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")
+
 ```
 <details><summary>combined_visit_data_total TABLE *(Click to expand)*</summary>
 ```{r}
@@ -2056,4 +2145,4 @@ knitr:: kable(combined_visit_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. 
+The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.   

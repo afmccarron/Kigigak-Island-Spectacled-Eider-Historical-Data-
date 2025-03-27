@@ -42,7 +42,7 @@ setdiff(colnames(kigmarkdata2000_updated), colnames(markdata2000_updated))
 setdiff(colnames(markdata2000_updated), colnames(kigmarkdata2000_updated))
 intersect(colnames(kigmarkdata2000_updated), colnames(markdata2000_updated))
 
-merged_markdata2000 <- merge(kigmarkdata2000_updated, markdata2000_updated, by = "MARK_ID", all.x = TRUE)
+merged_markdata2000 <- bind_rows(kigmarkdata2000_updated, markdata2000_updated)
 
 
 
