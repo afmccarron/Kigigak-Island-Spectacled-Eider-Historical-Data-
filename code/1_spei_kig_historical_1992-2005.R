@@ -573,3 +573,6 @@ egg_data_list <- lapply(egg_data_list, function(df) {
 # Combine all the data frames into one
 egg_combined_data1994.2005 <- bind_rows(egg_data_list)
 
+# Exporting egg data frame as .csv
+write.csv(egg_combined_data1994.2005, "output/egg_combined_data1994-2005.csv")
+

@@ -72,8 +72,8 @@ combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_header_data_total)%>%
@@ -87,6 +87,21 @@ leaflet(combined_header_data_total)%>%
     fillOpacity = 0.7,
     popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
   )
+
+#identify data points that have lat long values outside the Kigigak area
+
+  #Define Kig area boundaries
+  min_lat <- 60.814000
+  max_lat <- 60.879000
+  min_lon <- -165.029600
+  max_lon <- -164.883000
+
+  #Filter for rows outside Kig area
+  header_rows_outside_kig <- combined_header_data_total %>% filter((LAT < min_lat) |
+                                                                     (LAT > max_lat) |
+                                                                     (LON < min_lon) |
+                                                                     (LON > max_lon)
+                                                                   )
 
 #Remove columns that have only NAs
 combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.)))
@@ -139,8 +154,8 @@ combined_markdata_total$LATITITUDE <- st_coordinates(sf_combined)[,2]
 combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
-combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+combined_markdata_total$LATITITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+combined_markdata_total$LONGITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_markdata_total)%>%
@@ -154,6 +169,21 @@ leaflet(combined_markdata_total)%>%
     fillOpacity = 0.7,
     popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
   )
+
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+markdata_rows_outside_kig <- combined_markdata_total %>% filter((LATITITUDE < min_lat) |
+                                                                   (LATITITUDE > max_lat) |
+                                                                   (LONGITUDE < min_lon) |
+                                                                   (LONGITUDE > max_lon)
+)
 
 #Remove columns that have only NAs
 combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
@@ -208,8 +238,8 @@ combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_resight_data_total)%>%
@@ -223,6 +253,22 @@ leaflet(combined_resight_data_total)%>%
     fillOpacity = 0.7,
     popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
   )
+
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+resight_rows_outside_kig <- combined_resight_data_total %>% filter((LAT < min_lat) |
+                                                                  (LAT > max_lat) |
+                                                                  (LON < min_lon) |
+                                                                  (LON > max_lon)
+)
+
 
 #Remove columns that have only NAs
 combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.)))
@@ -282,8 +328,8 @@ combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_visit_data_total)%>%
@@ -297,6 +343,22 @@ leaflet(combined_visit_data_total)%>%
     fillOpacity = 0.7,
     popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
   )
+
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+visit_rows_outside_kig <- combined_visit_data_total %>% filter((LAT < min_lat) |
+                                                                  (LAT > max_lat) |
+                                                                  (LON < min_lon) |
+                                                                  (LON > max_lon)
+)
+
 
 #Remove columns that have only NAs
 combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
