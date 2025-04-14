@@ -1874,8 +1874,8 @@ combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_header_data_total$Latitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$Longitude[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_header_data_total)%>%
@@ -1890,11 +1890,27 @@ leaflet(combined_header_data_total)%>%
     popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
   )
 
+#identify data points that have lat long values outside the Kigigak area
+
+  #Define Kig area boundaries
+  min_lat <- 60.814000
+  max_lat <- 60.879000
+  min_lon <- -165.029600
+  max_lon <- -164.883000
+
+  #Filter for rows outside Kig area
+  header_rows_outside_kig <- combined_header_data_total %>% filter((LAT < min_lat) |
+                                                                     (LAT > max_lat) |
+                                                                     (LON < min_lon) |
+                                                                     (LON > max_lon)
+                                                                   )
+
 #Remove columns that have only NAs
 combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.)))
 
 #Export combined data frame to .csv
 write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
+
 
 ```
 <details><summary>combined_header_data_total TABLE *(Click to expand)*</summary>
@@ -1903,7 +1919,7 @@ knitr:: kable(combined_header_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the "output" folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder. 
+The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the "output" folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder. 
 
 ##### 15. 
 
@@ -1951,8 +1967,8 @@ combined_markdata_total$LATITITUDE <- st_coordinates(sf_combined)[,2]
 combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_markdata_total$Latitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
-combined_markdata_total$Longitude[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+combined_markdata_total$LATITITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
+combined_markdata_total$LONGITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_markdata_total)%>%
@@ -1967,6 +1983,21 @@ leaflet(combined_markdata_total)%>%
     popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
   )
 
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+markdata_rows_outside_kig <- combined_markdata_total %>% filter((LATITITUDE < min_lat) |
+                                                                   (LATITITUDE > max_lat) |
+                                                                   (LONGITUDE < min_lon) |
+                                                                   (LONGITUDE > max_lon)
+)
+
 #Remove columns that have only NAs
 combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
   #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
@@ -1975,7 +2006,6 @@ combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.))
 
 #Exporting combined data frame to .csv
 write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
-
 ```
 <details><summary>combined_markdata_total TABLE *(Click to expand)*</summary>
 ```{r}
@@ -1983,7 +2013,7 @@ knitr:: kable(combined_markdata_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' and 'NEST_NO' columns to create a new, unique identifying column, 'MARK_ID'. However, many duplicates remain in this column, as there are oddities and inconsistencies with certain data entires, as well as NA values for either 'BANDNUMBER_COMPLETE', 'DATE', or 'NEST_NO'. Including three identifiers reduces the amount of duplicates by increasing specificity, however, there are still many and are being investigated through review of the hard copies. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Markdata' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NA values are removed from the table. After reviewing the table, there were also two columns that contain 0s in addition to NA values, where the 0s clearly did not represent data and were deemed equivilent to NA values; these columns were also removed. A usable, .csv, table is then written and exported to the "output" folder.    
+The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' and 'NEST_NO' columns to create a new, unique identifying column, 'MARK_ID'. However, many duplicates remain in this column, as there are oddities and inconsistencies with certain data entires, as well as NA values for either 'BANDNUMBER_COMPLETE', 'DATE', or 'NEST_NO'. Including three identifiers reduces the amount of duplicates by increasing specificity, however, there are still many and are being investigated through review of the hard copies. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Markdata' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NA values are removed from the table. After reviewing the table, there were also two columns that contain 0s in addition to NA values, where the 0s clearly did not represent data and were deemed equivalent to NA values; these columns were also removed. A usable, .csv, table is then written and exported to the "output" folder.    
 
 ##### 16.
 
@@ -2030,8 +2060,8 @@ combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_resight_data_total$Latitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-combined_resight_data_total$Longitude[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_resight_data_total)%>%
@@ -2046,6 +2076,22 @@ leaflet(combined_resight_data_total)%>%
     popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
   )
 
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+resight_rows_outside_kig <- combined_resight_data_total %>% filter((LAT < min_lat) |
+                                                                  (LAT > max_lat) |
+                                                                  (LON < min_lon) |
+                                                                  (LON > max_lon)
+)
+
+
 #Remove columns that have only NAs
 combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.)))
 
@@ -2059,7 +2105,7 @@ knitr:: kable(combined_resight_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Resight' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.  
+The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Resight' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.  
 
 
 ##### 17.
@@ -2115,8 +2161,8 @@ combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
 combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_visit_data_total$Latitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-combined_visit_data_total$Longitude[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
 
 #Plot the converted LAT LON values
 leaflet(combined_visit_data_total)%>%
@@ -2130,6 +2176,22 @@ leaflet(combined_visit_data_total)%>%
     fillOpacity = 0.7,
     popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
   )
+
+#identify data points that have lat long values outside the Kigigak area
+
+#Define Kig area boundaries
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+#Filter for rows outside Kig area
+visit_rows_outside_kig <- combined_visit_data_total %>% filter((LAT < min_lat) |
+                                                                  (LAT > max_lat) |
+                                                                  (LON < min_lon) |
+                                                                  (LON > max_lon)
+)
+
 
 #Remove columns that have only NAs
 combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
@@ -2145,4 +2207,4 @@ knitr:: kable(combined_visit_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.   
+The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. A usable, .csv, table is then written and exported to the "output" folder.   
