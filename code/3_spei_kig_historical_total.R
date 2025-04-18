@@ -104,7 +104,46 @@ leaflet(combined_header_data_total)%>%
                                                                    )
 
 #Remove columns that have only NAs
-combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.)))
+combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.) | . == 0))
+
+#merging columns H2O_DIST and H20_DIST
+combined_header_data_total <- combined_header_data_total %>%
+  mutate(
+    H2O_DIST = coalesce(H2O_DIST, H20_DIST)
+  ) %>%
+  select(-H20_DIST)
+
+#standardizing entries in column "SITE"
+combined_header_data_total <- combined_header_data_total %>%
+  mutate(
+    SITE = case_when(
+
+      # Sloughbank variants
+      tolower(SITE) %in% c("slbnk", "slbnki", "slbnkt", "slbnko", "sloughbank",
+                                  "sloughbank/poolshore", "bnk") ~ "sloughbank",
+
+      # Pondshore variants
+      tolower(SITE) %in% c("polshr", "polsho", "poolsh", "poolshore", "pondshore",
+                                  "pondshore/peninsula", "laksho", "lakshr", "laksh",
+                                  "lshore", "lakeshore") ~ "pondshore",
+
+      # Island variants
+      tolower(SITE) %in% c("island", "islan") ~ "island",
+
+      # Displaced island
+      tolower(SITE) %in% c("dispis", "displaced island") ~ "displaced_island",
+
+      # Grassflat variants
+      tolower(SITE) %in% c("gflat", "gras", "grassflat", "grassflat/sloughbank", "meadow") ~ "grassflat",
+
+      # Peninsula variants
+      tolower(SITE) %in% c("penins", "penin", "ppenin", "peninsula") ~ "peninsula",
+
+      # Pingo
+      tolower(SITE) %in% c("pingo") ~ "pingo"
+
+    )
+  )
 
 #Export combined data frame to .csv
 write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
@@ -190,6 +229,50 @@ combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.))
   #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
   combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
 
+#Merging columns TARSALCODE and TARSAL
+  combined_markdata_total <- combined_markdata_total %>%
+    mutate(
+      TARSALCODE = coalesce(TARSALCODE, TARSAL)
+    ) %>%
+    select(-TARSAL)
+
+ #Merging columns NASALCODE and NASAL
+   combined_markdata_total <- combined_markdata_total %>%
+    mutate(
+      NASALCODE = coalesce(NASALCODE, NASAL)
+    ) %>%
+    select(-NASAL)
+
+
+#Standardizing entries in column "AGE"
+  combined_markdata_total <- combined_markdata_total %>%
+    mutate(
+      AGE = case_when(
+
+        # Local variants
+        tolower(AGE) %in% c("loc" ) ~ "L",
+
+        #After hatch year
+        tolower(AGE) %in% c("ahy") ~ "AHY",
+
+        #After third year
+        tolower(AGE) %in% c("aty") ~ "ATY",
+
+        #After second year
+        tolower(AGE) %in% c("asy") ~ "ASY",
+
+        #Third year
+        tolower(AGE) %in% c("ty") ~ "TY",
+
+        #Unknown
+        tolower(AGE) %in% c("unk") ~ "UNK",
+
+        #Second year
+        tolower(AGE) %in% c("sy") ~ "SY"
+
+      )
+    )
+
 
 #Exporting combined data frame to .csv
 write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
@@ -271,10 +354,63 @@ resight_rows_outside_kig <- combined_resight_data_total %>% filter((LAT < min_la
 
 
 #Remove columns that have only NAs
-combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.)))
+combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.) | . == 0))
+
+#Merging columns COMMENTS and Comments
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(
+    COMMENTS = coalesce(COMMENTS, Comments)
+  ) %>%
+  select(-Comments)
+
+#Standardizing entries in column "FIRST_MARK"
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(
+    FIRST_MARK = case_when(
+
+      # NONE variants
+      tolower(FIRST_MARK) %in% c("none", "non", "none", "nonw" ) ~ "NONE",
+
+      #NASAL variants
+      tolower(FIRST_MARK) %in% c("nasa", "nasl", "nasal") ~ "NASAL",
+
+      #TARSAL variants
+      tolower(FIRST_MARK) %in% c("tars", "tar", "tarsal") ~ "TARSAL",
+
+      #Unknown variants
+      tolower(FIRST_MARK) %in% c("unk") ~ "UNK",
+
+      # META ?
+      tolower(FIRST_MARK) %in% c("meta") ~ "META"
+    )
+  )
+
+#Standardizing entries in column "RESIGHT_METHOD"
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(
+    RESIGHT_METHOD = case_when(
+
+      #Camera resights
+      tolower(RESIGHT_METHOD) %in% c("camera", "tarsal via camera, nasal disk visually" ) ~ "CAMERA",
+
+      #VISUAL variants
+      tolower(RESIGHT_METHOD) %in% c("visual", "scope") ~ "VISUAL",
+
+      #RECAP variants
+      tolower(RESIGHT_METHOD) %in% c("recap", "recap", "trapped") ~ "RECAP",
+
+      #V/C?
+      tolower(RESIGHT_METHOD) %in% c("v/c") ~ "V/C"
+
+    )
+  )
+    #adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
+    combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
+
 
 #Export the combined data frame to .csv
 write.csv(combined_resight_data_total, "output/combined_resight_data_1994-2015.csv")
+
 
 ####################################
 
@@ -363,6 +499,58 @@ visit_rows_outside_kig <- combined_visit_data_total %>% filter((LAT < min_lat) |
 #Remove columns that have only NAs
 combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
 
+#Merging columns HEN_STAT and HEN_STATUS
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(
+    HEN_STAT = coalesce(HEN_STAT, HEN_STATUS)
+  ) %>%
+  select(-HEN_STATUS)
+
+#Merging columns EGGS_INVI and EGGS_INVIABLE
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(
+    EGGS_INVI = coalesce(EGGS_INVI, EGGS_INVIABLE)
+  ) %>%
+  select(-EGGS_INVIABLE)
+
+
+#Standardize STATUS column entries
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(
+    STATUS = case_when(
+
+      #Incubate variants
+      tolower(STATUS) %in% c("incubating", "incuba", "incub", "incubat", "incubatng", "i", "i?" ) ~ "INCUBATE",
+
+      #MISSING/DESTROYED variants
+      tolower(STATUS) %in% c("failed", "1 egg broken", "a or p", "a/p?") ~ "MISSING/DESTROYED",
+
+      #HATCHING variants
+      tolower(STATUS) %in% c("pipped", "pip") ~ "HATCHING",
+
+      #HATCHED variants
+      tolower(STATUS) %in% c("hatched", "ducklings", "hatch", "hatche", "1 hatched", "2 hatched", "ducklin", "h", "brood", "hatched?", "hatched/trapped") ~ "HATCHED",
+
+      #COLD variants
+      tolower(STATUS) %in% c("abandoned", "abandon", "abando", "abandned", "a", "a?") ~ "COLD",
+
+      #LAYING variants
+      tolower(STATUS) %in% c("laying", " l", "l/i") ~ "LAYING",
+
+      #PREDATED variants
+      tolower(STATUS) %in% c("predated", "depred", "depredated", "predat", "predate", "p", "d") ~ "PREDATED",
+
+      #UNKNOWN variants
+      tolower(STATUS) %in% c("unknown", "u", "h/p?") ~ "UNKNOWN",
+
+      #TRAP variants
+      tolower(STATUS) %in% c("t", "trapped", "trappeding", "trappe") ~ "TRAP",
+
+      #OTHER
+      tolower(STATUS) %in% c("other", "resighted", "ok") ~ "OTHER"
+    )
+  )
 
 #Export combined data frame as a .csv
 write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")
+
