@@ -57,52 +57,8 @@ header_combined_data2006.2015$NORTHING <- as.numeric(header_combined_data2006.20
 # Now combine the data frames
 combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
 
-#Converting NA values to a placeholder value
-combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
-combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
 
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_header_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 5,
-    color = "blue",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-  #Define Kig area boundaries
-  min_lat <- 60.814000
-  max_lat <- 60.879000
-  min_lon <- -165.029600
-  max_lon <- -164.883000
-
-  #Filter for rows outside Kig area
-  header_rows_outside_kig <- combined_header_data_total %>% filter((LAT < min_lat) |
-                                                                     (LAT > max_lat) |
-                                                                     (LON < min_lon) |
-                                                                     (LON > max_lon)
-                                                                   )
-
+##Post combined table processing
 #Remove columns that have only NAs
 combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.) | . == 0))
 
@@ -145,15 +101,105 @@ combined_header_data_total <- combined_header_data_total %>%
     )
   )
 
-#Export combined data frame to .csv
-write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
+#Creating a new data frame from combined_header_data_total removing less relevant columns and maintaining their relationship to header_ID
 
-##################################
+#selecting columns to add to the new dataframe
+associated_spp_header_combined <- combined_header_data_total %>%
+  select(HEADER_ID, NEST_NO, VEG_HT, VEG_DENS1, VEG_DENS2, DOM_SPEC1,
+         SPEC_COV1, DOM_SPEC2, SPEC_COV2, DOM_SPEC3, SPEC_COV3,
+         DOM_SPEC4, SPEC_COV4, GOOSE_10M, GOOSE1_SP, GOOSE1_E,
+         GOOSE1_N, GOOSE2_E, GOOSE2_N, GOOSE2_SP, GOOSE3_E, GOOSE3_N,
+         GOOSE3_SP, GOOSE4_E, GOOSE4_N, GOOSE4_SP, GOOSE5_E, GOOSE5_N,
+         GOOSE5_SP, GOOSE6_E, GOOSE6_N, GOOSE6_SP, GOOSE7_E, GOOSE7_N,
+         GOOSE7_SP, GOOSE8_E, GOOSE8_N, GOOSE8_SP, GOOSE_COMM, GULL_10M,
+         GULL1_E, GULL1_N, GULL2_E, GULL2_N, GULL3_E, GULL3_N, GULL4_E,
+         GULL4_N, GULL5_E, GULL5_N, GULL6_E, GULL6_N, GULL7_E, GULL7_N,
+         GULL8_E, GULL8_N, GULL_COMM    )
+#removing columns from combined_header_data_total
+##creating a vector specifying columns to remove
+columns_to_remove <- c("VEG_HT", "VEG_DENS1", "VEG_DENS2", "DOM_SPEC1",
+                       "SPEC_COV1", "DOM_SPEC2", "SPEC_COV2", "DOM_SPEC3", "SPEC_COV3",
+                       "DOM_SPEC4", "SPEC_COV4", "GOOSE_10M", "GOOSE1_SP", "GOOSE1_E",
+                       "GOOSE1_N", "GOOSE2_E", "GOOSE2_N", "GOOSE2_SP", "GOOSE3_E", "GOOSE3_N",
+                       "GOOSE3_SP", "GOOSE4_E", "GOOSE4_N", "GOOSE4_SP", "GOOSE5_E", "GOOSE5_N",
+                       "GOOSE5_SP", "GOOSE6_E", "GOOSE6_N", "GOOSE6_SP", "GOOSE7_E", "GOOSE7_N",
+                       "GOOSE7_SP", "GOOSE8_E", "GOOSE8_N", "GOOSE8_SP", "GOOSE_COMM", "GULL_10M",
+                       "GULL1_E", "GULL1_N", "GULL2_E", "GULL2_N", "GULL3_E", "GULL3_N", "GULL4_E",
+                       "GULL4_N", "GULL5_E", "GULL5_N", "GULL6_E", "GULL6_N", "GULL7_E", "GULL7_N",
+                       "GULL8_E", "GULL8_N","GULL_COMM")
+
+combined_header_data_total_reduced <- combined_header_data_total %>%
+  select(-all_of(columns_to_remove))
+
+
+##Converting and plotting the nest site locations
+#Converting NA values to a placeholder value
+combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
+combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_header_data_total <- combined_header_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+header_inside_kig <- combined_header_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(header_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "blue",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
+  )
+
+
+#Export combined data frame to .csv
+write.csv(combined_header_data_total_reduced, "output/combined_header_data_1994-2015.csv")
+#Export associated spp data frame to .csv
+write.csv(associated_spp_header_combined, "output/associated_spp_header_data_1994-2015.csv")
+
+
+#######################################
 
 #Combining markdata data from 1994-2005 and 2006-2015
 
 combined_markdata_total <- bind_rows(markdata_combined_data1994.2005, markdata_combined_data2006.2015)
 
+##Post combined table processing
 #Changing the date from "1900" to "2000" for data collected in 2000
 
 combined_markdata_total <- combined_markdata_total %>%
@@ -175,9 +221,58 @@ combined_markdata_total$MARK_ID <- paste(combined_markdata_total$DATE,
 #Moving "MARK_ID" to front of data frame for ease of viewing
 combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
 
+#Remove columns that have only NAs
+combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
+#manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
+combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
 
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+#Merging columns TARSALCODE and TARSAL
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    TARSALCODE = coalesce(TARSALCODE, TARSAL)
+  ) %>%
+  select(-TARSAL)
 
+#Merging columns NASALCODE and NASAL
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    NASALCODE = coalesce(NASALCODE, NASAL)
+  ) %>%
+  select(-NASAL)
+
+
+#Standardizing entries in column "AGE"
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    AGE = case_when(
+
+      # Local variants
+      tolower(AGE) %in% c("loc" ) ~ "L",
+
+      #After hatch year
+      tolower(AGE) %in% c("ahy") ~ "AHY",
+
+      #After third year
+      tolower(AGE) %in% c("aty") ~ "ATY",
+
+      #After second year
+      tolower(AGE) %in% c("asy") ~ "ASY",
+
+      #Third year
+      tolower(AGE) %in% c("ty") ~ "TY",
+
+      #Unknown
+      tolower(AGE) %in% c("unk") ~ "UNK",
+
+      #Second year
+      tolower(AGE) %in% c("sy") ~ "SY"
+
+    )
+  )
+
+
+
+##Converting and plotting MARK site locations
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
 combined_markdata_total$EASTING[is.na(combined_markdata_total$EASTING)] <- 0
 combined_markdata_total$NORTHING[is.na(combined_markdata_total$NORTHING)] <- 0
@@ -196,82 +291,40 @@ combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 combined_markdata_total$LATITITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 combined_markdata_total$LONGITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
-#Plot the converted LAT LON values
-leaflet(combined_markdata_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LONGITUDE,
-    lat = ~LATITITUDE,
-    radius = 4,
-    color = "yellow",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
+# Define Kigigak Island bounding box
 min_lat <- 60.814000
 max_lat <- 60.879000
 min_lon <- -165.029600
 max_lon <- -164.883000
 
-#Filter for rows outside Kig area
-markdata_rows_outside_kig <- combined_markdata_total %>% filter((LATITITUDE < min_lat) |
-                                                                   (LATITITUDE > max_lat) |
-                                                                   (LONGITUDE < min_lon) |
-                                                                   (LONGITUDE > max_lon)
-)
-
-#Remove columns that have only NAs
-combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
-  #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
-  combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
-
-#Merging columns TARSALCODE and TARSAL
-  combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      TARSALCODE = coalesce(TARSALCODE, TARSAL)
-    ) %>%
-    select(-TARSAL)
-
- #Merging columns NASALCODE and NASAL
-   combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      NASALCODE = coalesce(NASALCODE, NASAL)
-    ) %>%
-    select(-NASAL)
-
-
-#Standardizing entries in column "AGE"
-  combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      AGE = case_when(
-
-        # Local variants
-        tolower(AGE) %in% c("loc" ) ~ "L",
-
-        #After hatch year
-        tolower(AGE) %in% c("ahy") ~ "AHY",
-
-        #After third year
-        tolower(AGE) %in% c("aty") ~ "ATY",
-
-        #After second year
-        tolower(AGE) %in% c("asy") ~ "ASY",
-
-        #Third year
-        tolower(AGE) %in% c("ty") ~ "TY",
-
-        #Unknown
-        tolower(AGE) %in% c("unk") ~ "UNK",
-
-        #Second year
-        tolower(AGE) %in% c("sy") ~ "SY"
-
-      )
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LATITITUDE) & !is.na(LONGITUDE) &
+        LATITITUDE >= min_lat & LATITITUDE <= max_lat &
+        LONGITUDE >= min_lon & LONGITUDE <= max_lon ~ "yes",
+      TRUE ~ "no"
     )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+markdata_inside_kig <- combined_markdata_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(markdata_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LONGITUDE,
+    lat = ~LATITITUDE,
+    radius = 5,
+    color = "yellow",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
+  )
 
 
 #Exporting combined data frame to .csv
@@ -288,6 +341,8 @@ resight_combined_data2006.2015$NORTHING <- as.character(resight_combined_data200
 #combining data frames
 combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
 
+
+##Post combined table processing
 #Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
 combined_resight_data_total <- combined_resight_data_total %>%
   mutate(DATE = case_when(
@@ -302,56 +357,6 @@ combined_resight_data_total$TARSALCODE <-
   #Dropping original 'TARSUS' and 'TARSAL' columns, as they are redundant now
 combined_resight_data_total <- combined_resight_data_total %>%
   select(-TARSUS, -TARSAL)
-
-
- #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
-combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_resight_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 4,
-    color = "red",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
-min_lat <- 60.814000
-max_lat <- 60.879000
-min_lon <- -165.029600
-max_lon <- -164.883000
-
-#Filter for rows outside Kig area
-resight_rows_outside_kig <- combined_resight_data_total %>% filter((LAT < min_lat) |
-                                                                  (LAT > max_lat) |
-                                                                  (LON < min_lon) |
-                                                                  (LON > max_lon)
-)
-
 
 #Remove columns that have only NAs
 combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.) | . == 0))
@@ -404,8 +409,66 @@ combined_resight_data_total <- combined_resight_data_total %>%
 
     )
   )
-    #adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
-    combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
+#adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
+combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
+
+
+
+##Converting and plotting resight locations
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
+combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+resight_inside_kig <- combined_resight_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(resight_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "red",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("TARSALCODE: ", combined_header_data_total$TARSALCODE)
+  )
+
+
 
 
 #Export the combined data frame to .csv
@@ -431,6 +494,9 @@ visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$C
 #Combining the two data frames into one
 combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
 
+
+
+##Post combined table processing
 #Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
 combined_visit_data_total <- combined_visit_data_total %>%
   mutate(DATE = case_when(
@@ -446,55 +512,6 @@ combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, comb
 combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
 #Move the "VISIT_ID" column to the left for ease of viewing
 combined_visit_data_total <- combined_visit_data_total[, c("VISIT_ID", setdiff(names(combined_visit_data_total), "VISIT_ID"))]
-
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
-combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_visit_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 4,
-    color = "pink",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
-min_lat <- 60.814000
-max_lat <- 60.879000
-min_lon <- -165.029600
-max_lon <- -164.883000
-
-#Filter for rows outside Kig area
-visit_rows_outside_kig <- combined_visit_data_total %>% filter((LAT < min_lat) |
-                                                                  (LAT > max_lat) |
-                                                                  (LON < min_lon) |
-                                                                  (LON > max_lon)
-)
-
 
 #Remove columns that have only NAs
 combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
@@ -550,6 +567,63 @@ combined_visit_data_total <- combined_visit_data_total %>%
       tolower(STATUS) %in% c("other", "resighted", "ok") ~ "OTHER"
     )
   )
+
+
+##Converting and plotting visit locations
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
+combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+visit_inside_kig <- combined_visit_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(visit_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "pink",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("VISIT_ID: ", combined_visit_data_total$VISIT_ID)
+  )
+
+
 
 #Export combined data frame as a .csv
 write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")
