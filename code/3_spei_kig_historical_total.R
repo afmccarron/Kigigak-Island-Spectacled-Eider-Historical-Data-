@@ -47,12 +47,12 @@ header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.200
 header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
 
 #Convert EASTING columns to character in both data frames
-header_combined_data1994.2005$EASTING <- as.integer(header_combined_data1994.2005$EASTING)
-header_combined_data2006.2015$EASTING <- as.integer(header_combined_data2006.2015$EASTING)
+header_combined_data1994.2005$EASTING <- as.numeric(header_combined_data1994.2005$EASTING)
+header_combined_data2006.2015$EASTING <- as.numeric(header_combined_data2006.2015$EASTING)
 
 #Convert NORTHING columns to character in both data frames
-header_combined_data1994.2005$NORTHING <- as.integer(header_combined_data1994.2005$NORTHING)
-header_combined_data2006.2015$NORTHING <- as.integer(header_combined_data2006.2015$NORTHING)
+header_combined_data1994.2005$NORTHING <- as.numeric(header_combined_data1994.2005$NORTHING)
+header_combined_data2006.2015$NORTHING <- as.numeric(header_combined_data2006.2015$NORTHING)
 
 # Now combine the data frames
 combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
