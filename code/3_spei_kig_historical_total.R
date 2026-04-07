@@ -271,8 +271,7 @@ combined_markdata_total <- combined_markdata_total %>%
   )
 
 #changing the name of column: "Date originally banded" to "DATE_ORIGINAL_BAND" so the name is less confusing in .csv format
-combined_markdata_total <- combined_markdata_total %>% rename(DATE_ORIGINAL_BAND =
-                                                                `Date Originally
+combined_markdata_total <- combined_markdata_total %>% rename(DATE_ORIGINAL_BAND = `Date Originally
 Banded`)
 
 
