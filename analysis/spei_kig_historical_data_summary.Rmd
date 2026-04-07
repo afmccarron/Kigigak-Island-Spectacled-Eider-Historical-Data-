@@ -31,7 +31,7 @@ Contents: [Standardizing and Compiling data files collected from years 1994-2005
   + 5c. Comparing resight data and results
   + 5d. Comparing visit data and results
   + 5e. Comparing egg data and results
-6. Combining the the .dbf files from each year
+6. Combining the the .dbf files from each year (years 1994-2005)
   + 6a. Header data combination
   + 6b. Markdata combination
   + 6c. Resight data combination
@@ -1249,6 +1249,19 @@ for (file in Header_excel_files_eider2006.2015) {
     }
   })
 
+   #convert EASTING and NORTHING values to numeric (double)
+  df <- df %>%
+    mutate(
+      across(c(EASTING, NORTHING), ~ {
+        x <- as.character(.)
+        x <- trimws(x)
+        x <- gsub(",", "", x)
+        x <- gsub("[^0-9.-]", "", x)
+        x[x == ""] <- NA
+        as.numeric(x)
+      })
+    )
+  
   # Store all column names to determine the full set of columns
   all_columns <- union(all_columns, colnames(df))
 
@@ -1314,16 +1327,6 @@ for (i in 1:length(header_data_list2006.2015)) {
     df[[col]] <- NA
   }
 
-  # Convert 'Easting' to character (for consistency across all data frames)
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.character(df$EASTING)  # Ensure 'Easting' is consistently character
-  }
-
-  # Convert 'Northing' to character (for consistency across all data frames)
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.character(df$NORTHING)  # Ensure 'Easting' is consistently character
-  }
-
   # Add the updated data frame back to the list
   header_data_list2006.2015[[i]] <- df
 }
@@ -1341,7 +1344,7 @@ knitr:: kable(header_combined_data2006.2015)
 ```
 </details>
 
-The code chunk above, processes the header excel files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'Header_excel_files_eider2006.2015' created in 11a, then creates a new column in each file with the year, extracted from the folder name. Then all of the column names in each data frame are checked, and renamed according the column_rename_map. In the original data, there is no column that creates a unique identifier that differentiates each data entry. To solve this, a new column is created by combining the 'Year' and 'NEST_NO' columns and names 'HEADER_ID'. The data frame is then searched for duplicate 'HEADER_ID' rows; if the data in the remaining rows are identical, the two rows of data are combined into one, as they are duplicates; if they are not identical then a tailing number is added to the 'HEADER_ID' to ensure this column remains unique to each data entry. The column names in each file are then checked and if any of the files are missing certain columns, the columns are added and filled with NA data. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. 'EASTING' and 'NORTHING' are then converted to character/string values across all files. The updated data frame is added back to the 'header_data_list2006.2015' and are combined to create the data frame. 'header_combined_data2006.2015'. Column number 16 of this data frame was under the name '...9' which was then changed to 'COMMENTS' to be clear about the type of data that existed in that column. 
+The code chunk above, processes the header excel files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'Header_excel_files_eider2006.2015' created in 11a, then creates a new column in each file with the year, extracted from the folder name. Then all of the column names in each data frame are checked, and renamed according the column_rename_map. To ensure consistency of data type for EASTING and NORTHING values, the data in those columns are converted to numeric (double) data type; this reduces errors when combining tables, and reduces errors when converting EASTING NORTHING values to Latitude Longitude later in the process. In the original data, there is no column that creates a unique identifier that differentiates each data entry. To solve this, a new column is created by combining the 'Year' and 'NEST_NO' columns and names 'HEADER_ID'. The data frame is then searched for duplicate 'HEADER_ID' rows; if the data in the remaining rows are identical, the two rows of data are combined into one, as they are duplicates; if they are not identical then a tailing number is added to the 'HEADER_ID' to ensure this column remains unique to each data entry. The column names in each file are then checked and if any of the files are missing certain columns, the columns are added and filled with NA data. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. The updated data frame is added back to the 'header_data_list2006.2015' and are combined to create the data frame. 'header_combined_data2006.2015'. Column number 16 of this data frame was under the name '...9' which was then changed to 'COMMENTS' to be clear about the type of data that existed in that column. 
 
 ##### 12b. 
 ```{r}
@@ -1396,18 +1399,24 @@ for (file in markdata_excel_files_eider2006.2015) {
     }
   })
 
+   #convert EASTING and NORTHING values to numeric (double)
+  df <- df %>%
+    mutate(
+      across(c(EASTING, NORTHING), ~ {
+        x <- as.character(.)
+        x <- trimws(x)
+        x <- gsub(",", "", x)
+        x <- gsub("[^0-9.-]", "", x)
+        x[x == ""] <- NA
+        as.numeric(x)
+      })
+    )
+  
   # Standardize 'RECAP' column to logical type if it exists
   if ("RECAP" %in% colnames(df)) {
     df$RECAP <- as.logical(df$RECAP)  # Convert 'RECAP' to logical (TRUE/FALSE)
   } else {
     df$RECAP <- NA  # If 'RECAP' doesn't exist, assign NA
-  }
-
-  # Standardize 'EASTING' column to numeric type if it exists
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)  # Convert 'EASTING' to numeric
-  } else {
-    df$EASTING <- NA  # If 'EASTING' doesn't exist, assign NA
   }
 
   # Standardize 'PLOT' column to character type if it exists
@@ -1456,16 +1465,6 @@ for (i in 1:length(markdata_data_list2006.2015)) {
     df$RECAP <- as.logical(df$RECAP)
   }
 
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-
   # Clean and standardize 'PLOT' column to numeric type, replacing invalid entries with NA
   if ("PLOT" %in% colnames(df)) {
     # Convert 'PLOT' to numeric, replacing non-numeric entries with NA
@@ -1490,7 +1489,7 @@ knitr:: kable(markdata_combined_data2006.2015)
 </details>
 
 
-The code chunk above processes the markdata files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'markdata_excel_files_eider2006.2015' created in 11b, then creates a new column in each file with the year, extracted from the folder name. Then all of the column names in each data frame are checked, and renamed according the column_rename_map_markdata. Columns including 'RECAP', 'EASTING', and 'PLOT' changed to have a consistent data type across files. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and missing columns are added to the data frames with NAs. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. Columns including 'RECAP', 'NORTHING', 'EASTING', and 'PLOT' are converted to be standard across files. The updated data frames are added to the 'markdata_combined_list2006.2015' list and used to combine into the single data frame, 'markdata_combined_data2006.2015'. 
+The code chunk above processes the markdata files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'markdata_excel_files_eider2006.2015' created in 11b, then creates a new column in each file with the year, extracted from the folder name. Then all of the column names in each data frame are checked, and renamed according the column_rename_map_markdata. To ensure consistency of data type for EASTING and NORTHING values, the data in those columns are converted to numeric (double) data type; this reduces errors when combining tables, and reduces errors when converting EASTING NORTHING values to Latitude Longitude later in the process. Columns including 'RECAP' and 'PLOT' changed to have a consistent data type across files. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and missing columns are added to the data frames with NAs. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. Columns including 'RECAP' and 'PLOT' are converted to be standard across files. The updated data frames are added to the 'markdata_combined_list2006.2015' list and used to combine into the single data frame, 'markdata_combined_data2006.2015'. 
 
 ##### 12c. 
 
@@ -1575,21 +1574,24 @@ for (i in 1:length(resight_data_list2006.2015)) {
     df[[col]] <- NA
   }
 
+  #convert EASTING and NORTHING values to numeric (double)
+  df <- df %>%
+    mutate(
+      across(c(EASTING, NORTHING), ~ {
+        x <- as.character(.)
+        x <- trimws(x)
+        x <- gsub(",", "", x)
+        x <- gsub("[^0-9.-]", "", x)
+        x[x == ""] <- NA
+        as.numeric(x)
+      })
+    )
+  
   # Standardize 'DATE' column to Date type
   if ("DATE" %in% colnames(df)) {
     df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
   }
 
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-  
   # Ensure 'Year' is standardized to numeric type
   if ("Year" %in% colnames(df)) {
     df$Year <- as.character(df$Year)
@@ -1618,7 +1620,7 @@ knitr:: kable(resight_combined_data2006.2015)
 </details>
 
 
-The code chunk above processes the resight data files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'resight_excel_files_eider2006.2015' created in 11c, then creates a new column in each file with the year, extracted from the folder name. All of the column names in each data frame are checked, and renamed according the column_rename_map_resight. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and added to the data frames with NAs. Due to some errors with combining columns using the bind_rows function later in this code, a line was added to ensure that the columns are put into the same order, making the bind_rows function properly. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. Columns including 'DATE', 'NORTHING', 'EASTING', 'Year', and 'PLOT' are converted to be standard across files. The updated data frames are added to the 'resight_combined_list2006.2015' list and used to combine into the single data frame, 'resight_combined_data2006.2015'. 
+The code chunk above processes the resight data files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. Then the code is broken up into two loops. The first, reads all the excel files found in the list 'resight_excel_files_eider2006.2015' created in 11c, then creates a new column in each file with the year, extracted from the folder name. All of the column names in each data frame are checked, and renamed according the column_rename_map_resight. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and added to the data frames with NAs. Due to some errors with combining columns using the bind_rows function later in this code, a line was added to ensure that the columns are put into the same order, making the bind_rows function properly. The second loop is then initiated and reads through the excel files again, and applies the renaming map again in case any file had other inconsistent names. The column names are then read through and checked to ensure that they match the column names stored in the 'all_columns' variable. To ensure consistency of data type for EASTING and NORTHING values, the data in those columns are converted to numeric (double) data type; this reduces errors when combining tables, and reduces errors when converting EASTING NORTHING values to Latitude Longitude later in the process. Columns including 'DATE', 'Year', and 'PLOT' are converted to be standard across files. The updated data frames are added to the 'resight_combined_list2006.2015' list and used to combine into the single data frame, 'resight_combined_data2006.2015'. 
 
 ##### 12d. 
 
@@ -1684,8 +1686,21 @@ for (file in visit_excel_files_eider2006.2015) {
       return(x)
     }
   })
-
-  # Store all column names to determine the full set of columns
+  
+  #convert EASTING and NORTHING values to numeric (double)
+  df <- df %>%
+    mutate(
+      across(c(EASTING, NORTHING), ~ {
+        x <- as.character(.)
+        x <- trimws(x)
+        x <- gsub(",", "", x)
+        x <- gsub("[^0-9.-]", "", x)
+        x[x == ""] <- NA
+        as.numeric(x)
+      })
+    )
+  
+   # Store all column names to determine the full set of columns
   all_columns <- union(all_columns, colnames(df))
 
 
@@ -1776,16 +1791,6 @@ for (i in 1:length(visit_data_list2006.2015)) {
     df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")
   }
 
-  # Ensure 'EASTING' is standardized to numeric type
-  if ("EASTING" %in% colnames(df)) {
-    df$EASTING <- as.numeric(df$EASTING)
-  }
-
-  # Ensure 'NORTHING' is standardized to numeric type
-  if ("NORTHING" %in% colnames(df)) {
-    df$NORTHING <- as.numeric(df$NORTHING)
-  }
-
   # Add the updated data frame back to the list
   visit_data_list2006.2015[[i]] <- df
 }
@@ -1803,7 +1808,7 @@ knitr:: kable(visit_combined_data2006.2015)
 ```
 </details>
 
-The code chunk above processes the visit data files from years 2006-2015 and combines them into a single data frame. This code firsts creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. The code is then broken up into two loops. The first is initiated and reads through the list of excel files, "visit_excel_files_eider2006.2015" created in 11d, then creates a new column in each file with the year, extracted from the folder name. The column names are then cleaned up by removing any leading/trailing spaces or newline characters to make column names as standard as they can be for the combining process. All of the column names in each data frame are checked, and renamed according the column_rename_map_visit. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and added to the data frames with NAs. Due to some errors with combining columns using the bind_rows function later in this code, a line was added to ensure that the columns are put into the same order, making the bind_rows function properly. The second loop is then initiated and reads through the excel files again, cleans up the column names again, and applies the renaming map in case any file had other inconsistent names. It is checked that all the files now contain all the columns that are currently stored in the all_columns list. A series of code lines then follow that standardize the data type, in columns where it is necessary. These updated data frames are added to the visit_data_list2006.2015 list and we combine them into the visit_combined_data2006.2015 data frame. After the cumulative data frame is created, a unique identifying column is created by combining the DATE column and NEST_NO column. 
+The code chunk above processes the visit data files from years 2006-2015 and combines them into a single data frame. This code first creates an empty list in which to store the data frames that are created from each year as they are read through. For the column names that will need to be changed, an empty variable as well as a predefined list of names that need to be changed and what they need to be changed into. The code is then broken up into two loops. The first is initiated and reads through the list of excel files, "visit_excel_files_eider2006.2015" created in 11d, then creates a new column in each file with the year, extracted from the folder name. The column names are then cleaned up by removing any leading/trailing spaces or newline characters to make column names as standard as they can be for the combining process. All of the column names in each data frame are checked, and renamed according the column_rename_map_visit. To ensure consistency of data type for EASTING and NORTHING values, the data in those columns are converted to numeric (double) data type; this reduces errors when combining tables, and reduces errors when converting EASTING NORTHING values to Latitude Longitude later in the process. All of the column names are now stored in the variable 'all_columns'; and the files are checked for missing columns, and added to the data frames with NAs. Due to some errors with combining columns using the bind_rows function later in this code, a line was added to ensure that the columns are put into the same order, making the bind_rows function properly. The second loop is then initiated and reads through the excel files again, cleans up the column names again, and applies the renaming map in case any file had other inconsistent names. It is checked that all the files now contain all the columns that are currently stored in the all_columns list. A series of code lines then follow that standardize the data type, in columns where it is necessary. These updated data frames are added to the visit_data_list2006.2015 list and we combine them into the visit_combined_data2006.2015 data frame. After the cumulative data frame is created, a unique identifying column is created by combining the DATE column and NEST_NO column. 
 
 ### Part 3: 3_spei_kig_historical_total
 ##### Table of Contents:
@@ -1848,63 +1853,18 @@ The code section above outlines the packages needed for the following section. I
 header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.2005$PHOTO)
 header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
 
-#Convert EASTING columns to character in both data frames
-header_combined_data1994.2005$EASTING <- as.integer(header_combined_data1994.2005$EASTING)
-header_combined_data2006.2015$EASTING <- as.integer(header_combined_data2006.2015$EASTING)
+#Convert EASTING columns to numeric (double) in both data frames
+header_combined_data1994.2005$EASTING <- as.numeric(header_combined_data1994.2005$EASTING)
+header_combined_data2006.2015$EASTING <- as.numeric(header_combined_data2006.2015$EASTING)
 
-#Convert NORTHING columns to character in both data frames
-header_combined_data1994.2005$NORTHING <- as.integer(header_combined_data1994.2005$NORTHING)
-header_combined_data2006.2015$NORTHING <- as.integer(header_combined_data2006.2015$NORTHING)
+#Convert NORTHING columns to numeric (double) in both data frames
+header_combined_data1994.2005$NORTHING <- as.numeric(header_combined_data1994.2005$NORTHING)
+header_combined_data2006.2015$NORTHING <- as.numeric(header_combined_data2006.2015$NORTHING)
 
 # Now combine the data frames
 combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
 
-#Converting NA values to a placeholder value
-combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
-combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_header_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 5,
-    color = "blue",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-  #Define Kig area boundaries
-  min_lat <- 60.814000
-  max_lat <- 60.879000
-  min_lon <- -165.029600
-  max_lon <- -164.883000
-
-  #Filter for rows outside Kig area
-  header_rows_outside_kig <- combined_header_data_total %>% filter((LAT < min_lat) |
-                                                                     (LAT > max_lat) |
-                                                                     (LON < min_lon) |
-                                                                     (LON > max_lon)
-                                                                   )
-
+##Post combined table processing
 #Remove columns that have only NAs
 combined_header_data_total <- combined_header_data_total %>% select_if(~!all(is.na(.) | . == 0))
 
@@ -1947,18 +1907,115 @@ combined_header_data_total <- combined_header_data_total %>%
     )
   )
 
+#Creating a new data frame from combined_header_data_total removing less relevant columns and maintaining their relationship to header_ID
+
+#selecting columns to add to the new dataframe
+associated_spp_header_combined <- combined_header_data_total %>%
+  select(HEADER_ID, NEST_NO, VEG_HT, VEG_DENS1, VEG_DENS2, DOM_SPEC1,
+         SPEC_COV1, DOM_SPEC2, SPEC_COV2, DOM_SPEC3, SPEC_COV3,
+         DOM_SPEC4, SPEC_COV4, GOOSE_10M, GOOSE1_SP, GOOSE1_E,
+         GOOSE1_N, GOOSE2_E, GOOSE2_N, GOOSE2_SP, GOOSE3_E, GOOSE3_N,
+         GOOSE3_SP, GOOSE4_E, GOOSE4_N, GOOSE4_SP, GOOSE5_E, GOOSE5_N,
+         GOOSE5_SP, GOOSE6_E, GOOSE6_N, GOOSE6_SP, GOOSE7_E, GOOSE7_N,
+         GOOSE7_SP, GOOSE8_E, GOOSE8_N, GOOSE8_SP, GOOSE_COMM, GULL_10M,
+         GULL1_E, GULL1_N, GULL2_E, GULL2_N, GULL3_E, GULL3_N, GULL4_E,
+         GULL4_N, GULL5_E, GULL5_N, GULL6_E, GULL6_N, GULL7_E, GULL7_N,
+         GULL8_E, GULL8_N, GULL_COMM    )
+#removing columns from combined_header_data_total
+##creating a vector specifying columns to remove
+columns_to_remove <- c("VEG_HT", "VEG_DENS1", "VEG_DENS2", "DOM_SPEC1",
+                       "SPEC_COV1", "DOM_SPEC2", "SPEC_COV2", "DOM_SPEC3", "SPEC_COV3",
+                       "DOM_SPEC4", "SPEC_COV4", "GOOSE_10M", "GOOSE1_SP", "GOOSE1_E",
+                       "GOOSE1_N", "GOOSE2_E", "GOOSE2_N", "GOOSE2_SP", "GOOSE3_E", "GOOSE3_N",
+                       "GOOSE3_SP", "GOOSE4_E", "GOOSE4_N", "GOOSE4_SP", "GOOSE5_E", "GOOSE5_N",
+                       "GOOSE5_SP", "GOOSE6_E", "GOOSE6_N", "GOOSE6_SP", "GOOSE7_E", "GOOSE7_N",
+                       "GOOSE7_SP", "GOOSE8_E", "GOOSE8_N", "GOOSE8_SP", "GOOSE_COMM", "GULL_10M",
+                       "GULL1_E", "GULL1_N", "GULL2_E", "GULL2_N", "GULL3_E", "GULL3_N", "GULL4_E",
+                       "GULL4_N", "GULL5_E", "GULL5_N", "GULL6_E", "GULL6_N", "GULL7_E", "GULL7_N",
+                       "GULL8_E", "GULL8_N","GULL_COMM")
+
+combined_header_data_total_reduced <- combined_header_data_total %>%
+  select(-all_of(columns_to_remove))
+
+
+##Converting and plotting the nest site locations
+#Converting NA values to a placeholder value
+combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
+combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_header_data_total <- combined_header_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+header_inside_kig <- combined_header_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(header_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "blue",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
+  )
+
+
 #Export combined data frame to .csv
-write.csv(combined_header_data_total, "output/combined_header_data_1994-2015.csv")
+write.csv(combined_header_data_total_reduced, "output/combined_header_data_1994-2015.csv")
+#Export associated spp data frame to .csv
+write.csv(associated_spp_header_combined, "output/associated_spp_header_data_1994-2015.csv")
 
 
 ```
-<details><summary>combined_header_data_total TABLE *(Click to expand)*</summary>
+<details><summary>combined_header_data_total_reduced TABLE *(Click to expand)*</summary>
 ```{r}
-knitr:: kable(combined_header_data_total)
+knitr:: kable(combined_header_data_total_reduced)
+```
+</details>
+<details><summary>associated_spp_header_combined TABLE *(Click to expand)*</summary>
+```{r}
+knitr:: kable(associated_spp_header_combined)
 ```
 </details>
 
-The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the "output" folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "H2O_DIST" and "H20_DIST"; these columns were combined. In the column labeled "SITE" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. A usable, .csv, table is then written and exported to the "output" folder. 
+The code chunk above is the process of combining the two header data frames previously created in sections 6a and 12a. Through trial and error, it was discovered that the data type in several columns needed to be standardized; these columns included, 'PHOTO', 'EASTING', and 'NORTHING'. After those were standardized, the two data frames are combined. 
+After the tables were combined, some editing to the format of the table was done. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "H2O_DIST" and "H20_DIST"; these columns were combined. In the column labeled "SITE" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. In the Header table there are many columns that describe other species that have an association with the spectacled eider nest; however, this data was not collected in most years. This results in an overcrowded table with mostly NA values. In an effort to make the Header table easier to work with, a separate table was created for the associated species, related to the Header table by HEADER_ID and NEST_NO. This preserves the data that was collected for associated plant and animal species. There are now two data frames: associated_spp_header_combined (includes identification columns and associated species columns) and combined_header_data_total_reduced (includes header data from 1994-2015, without the columns for associated species). 
+All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. After the locations are converted to Latitude and Longitude, a boundary defining Kigigak Island area is created with minimum and maximum acceptable latitude and longitude values. A new column is created labeled TRUE_LOCATION with the purpose of describing whether the Latitude and Longitude columns reflect a location that is possibly accurate. If the location is outside of the Kigigak area boundary, we know certainly that those coordinates are inaccurate (will get a label "no" in column), as all data was collected on the Kigigak Island; if the coordinates are within the boundary of Kigigak (will get the label "yes" in the column), there is still the possibility that the coordinates do not accurately represent the location, but there is no way to ensure coordinate accuracy within the island. A dataframe is created that includes only points inside the Kigigak boundary. This data is used to plot the locations using 'leaflet' package.
+A useable, .csv, table is written and exported to the "output" folder for both combined_header_data_total_reduced and associated_spp_header_combined. 
+
 
 ##### 15. 
 
@@ -1967,6 +2024,7 @@ The code chunk above is the process of combining the two header data frames prev
 
 combined_markdata_total <- bind_rows(markdata_combined_data1994.2005, markdata_combined_data2006.2015)
 
+#Post combined table processing
 #Changing the date from "1900" to "2000" for data collected in 2000
 
 combined_markdata_total <- combined_markdata_total %>%
@@ -1989,8 +2047,62 @@ combined_markdata_total$MARK_ID <- paste(combined_markdata_total$DATE,
 combined_markdata_total <- combined_markdata_total %>% relocate(MARK_ID, .before = BAND)
 
 
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
+#Remove columns that have only NAs
+combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
+#manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
+combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
 
+#Merging columns TARSALCODE and TARSAL
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    TARSALCODE = coalesce(TARSALCODE, TARSAL)
+  ) %>%
+  select(-TARSAL)
+
+#Merging columns NASALCODE and NASAL
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    NASALCODE = coalesce(NASALCODE, NASAL)
+  ) %>%
+  select(-NASAL)
+
+
+#Standardizing entries in column "AGE"
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    AGE = case_when(
+
+      # Local variants
+      tolower(AGE) %in% c("loc" ) ~ "L",
+
+      #After hatch year
+      tolower(AGE) %in% c("ahy") ~ "AHY",
+
+      #After third year
+      tolower(AGE) %in% c("aty") ~ "ATY",
+
+      #After second year
+      tolower(AGE) %in% c("asy") ~ "ASY",
+
+      #Third year
+      tolower(AGE) %in% c("ty") ~ "TY",
+
+      #Unknown
+      tolower(AGE) %in% c("unk") ~ "UNK",
+
+      #Second year
+      tolower(AGE) %in% c("sy") ~ "SY"
+
+    )
+  )
+
+#changing the name of column: "Date originally banded" to "DATE_ORIGINAL_BAND" so the name is less confusing in .csv format
+combined_markdata_total <- combined_markdata_total %>% rename(DATE_ORIGINAL_BAND =
+                                                                `Date Originally
+Banded`)
+
+
+##Converting and plotting MARK site locations
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
 combined_markdata_total$EASTING[is.na(combined_markdata_total$EASTING)] <- 0
 combined_markdata_total$NORTHING[is.na(combined_markdata_total$NORTHING)] <- 0
@@ -2009,82 +2121,40 @@ combined_markdata_total$LONGITUDE <- st_coordinates(sf_combined)[,1]
 combined_markdata_total$LATITITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 combined_markdata_total$LONGITUDE[combined_markdata_total$EASTING == 0 & combined_markdata_total$NORTHING == 0] <- NA
 
-#Plot the converted LAT LON values
-leaflet(combined_markdata_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LONGITUDE,
-    lat = ~LATITITUDE,
-    radius = 4,
-    color = "yellow",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
+# Define Kigigak Island bounding box
 min_lat <- 60.814000
 max_lat <- 60.879000
 min_lon <- -165.029600
 max_lon <- -164.883000
 
-#Filter for rows outside Kig area
-markdata_rows_outside_kig <- combined_markdata_total %>% filter((LATITITUDE < min_lat) |
-                                                                   (LATITITUDE > max_lat) |
-                                                                   (LONGITUDE < min_lon) |
-                                                                   (LONGITUDE > max_lon)
-)
-
-#Remove columns that have only NAs
-combined_markdata_total <- combined_markdata_total %>% select_if(~!all(is.na(.)))
-  #manually removing columns that contain only NAs and 0s (and the 0s in this case are equivilent to NAs)
-  combined_markdata_total <-  combined_markdata_total[, !(colnames(combined_markdata_total) %in% c("BAND", "BANDNU"))]
-
-#Merging columns TARSALCODE and TARSAL
-  combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      TARSALCODE = coalesce(TARSALCODE, TARSAL)
-    ) %>%
-    select(-TARSAL)
-
- #Merging columns NASALCODE and NASAL
-   combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      NASALCODE = coalesce(NASALCODE, NASAL)
-    ) %>%
-    select(-NASAL)
-
-
-#Standardizing entries in column "AGE"
-  combined_markdata_total <- combined_markdata_total %>%
-    mutate(
-      AGE = case_when(
-
-        # Local variants
-        tolower(AGE) %in% c("loc" ) ~ "L",
-
-        #After hatch year
-        tolower(AGE) %in% c("ahy") ~ "AHY",
-
-        #After third year
-        tolower(AGE) %in% c("aty") ~ "ATY",
-
-        #After second year
-        tolower(AGE) %in% c("asy") ~ "ASY",
-
-        #Third year
-        tolower(AGE) %in% c("ty") ~ "TY",
-
-        #Unknown
-        tolower(AGE) %in% c("unk") ~ "UNK",
-
-        #Second year
-        tolower(AGE) %in% c("sy") ~ "SY"
-
-      )
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_markdata_total <- combined_markdata_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LATITITUDE) & !is.na(LONGITUDE) &
+        LATITITUDE >= min_lat & LATITITUDE <= max_lat &
+        LONGITUDE >= min_lon & LONGITUDE <= max_lon ~ "yes",
+      TRUE ~ "no"
     )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+markdata_inside_kig <- combined_markdata_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(markdata_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LONGITUDE,
+    lat = ~LATITITUDE,
+    radius = 5,
+    color = "yellow",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
+  )
 
 
 #Exporting combined data frame to .csv
@@ -2097,7 +2167,10 @@ knitr:: kable(combined_markdata_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' and 'NEST_NO' columns to create a new, unique identifying column, 'MARK_ID'. However, many duplicates remain in this column, as there are oddities and inconsistencies with certain data entires, as well as NA values for either 'BANDNUMBER_COMPLETE', 'DATE', or 'NEST_NO'. Including three identifiers reduces the amount of duplicates by increasing specificity, however, there are still many and are being investigated through review of the hard copies. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Markdata' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NA values are removed from the table. After reviewing the table, there were also two columns that contain 0s in addition to NA values, where the 0s clearly did not represent data and were deemed equivalent to NA values; these columns were also removed.  There were two columns that collected the same data with slight variation in name, labeled "TARSALCODE" and "TARSAL"; these columns were combined. An additional two columns collected the same data with slight variation in name, labeled "NASALCODE" and "NASAL"; these columns were combined. In the column labeled "AGE" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match.  A usable, .csv, table is then written and exported to the "output" folder.    
+The code chunk above is the process of combining the two markdata data frames previously created in sections 6b and 12b. Using the 'bind_rows' function, the two data frames are combined. After combining, formatting adjustments were made to make the table more usable. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A column that includes the complete band number is then created. This column is then combined with the 'DATE' and 'NEST_NO' columns to create a new, unique identifying column, 'MARK_ID'. However, many duplicates remain in this column, as there are oddities and inconsistencies with certain data entires, as well as NA values for either 'BANDNUMBER_COMPLETE', 'DATE', or 'NEST_NO'. Including three identifiers reduces the amount of duplicates by increasing specificity, however, there are still many and are being investigated through review of the hard copies. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NA values are removed from the table. After reviewing the table, there were also two columns that contain 0s in addition to NA values, where the 0s clearly did not represent data and were deemed equivalent to NA values; these columns were also removed.  There were two columns that collected the same data with slight variation in name, labeled "TARSALCODE" and "TARSAL"; these columns were combined. An additional two columns collected the same data with slight variation in name, labeled "NASALCODE" and "NASAL"; these columns were combined. In the column labeled "AGE" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. To eliminate confusion of column names when file is exported to a .csv file, the column "Date orgininally banded" was renamed to "DATE_ORIGINAL_BAND".  
+All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LATITUDE' and 'LONGITUDE'. The placeholder 0s are then converted back into NAs. After the locations are converted to Latitude and Longitude, a boundary defining Kigigak Island area is created with minimum and maximum acceptable latitude and longitude values. A new column is created labeled TRUE_LOCATION with the purpose of describing whether the Latitude and Longitude columns reflect a location that is possibly accurate. If the location is outside of the Kigigak area boundary, we know certainly that those coordinates are inaccurate (will get a label "no" in column), as all data was collected on the Kigigak Island; if the coordinates are within the boundary of Kigigak (will get the label "yes" in the column), there is still the possibility that the coordinates do not accurately represent the location, but there is no way to ensure coordinate accuracy within the island. A dataframe is created that includes only points inside the Kigigak boundary. This data is used to plot the locations using 'leaflet' package. 
+A useable .csv file is written and exported to the "output" folder. 
+
 
 ##### 16.
 
@@ -2105,8 +2178,8 @@ The code chunk above is the process of combining the two markdata data frames pr
 #combining resight data from 1994-2005 and 2006-2015
 
 #standardizing the NORTHING column to be able to combine
-resight_combined_data1994.2005$NORTHING <- as.character(resight_combined_data1994.2005$NORTHING)
-resight_combined_data2006.2015$NORTHING <- as.character(resight_combined_data2006.2015$NORTHING)
+resight_combined_data1994.2005$NORTHING <- as.numeric(resight_combined_data1994.2005$NORTHING)
+resight_combined_data2006.2015$NORTHING <- as.numeric(resight_combined_data2006.2015$NORTHING)
 
 #combining data frames
 combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
@@ -2125,56 +2198,6 @@ combined_resight_data_total$TARSALCODE <-
   #Dropping original 'TARSUS' and 'TARSAL' columns, as they are redundant now
 combined_resight_data_total <- combined_resight_data_total %>%
   select(-TARSUS, -TARSAL)
-
-
- #Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
-combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_resight_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 4,
-    color = "red",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("TARSALCODE", combined_resight_data_total$TARSALCODE)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
-min_lat <- 60.814000
-max_lat <- 60.879000
-min_lon <- -165.029600
-max_lon <- -164.883000
-
-#Filter for rows outside Kig area
-resight_rows_outside_kig <- combined_resight_data_total %>% filter((LAT < min_lat) |
-                                                                  (LAT > max_lat) |
-                                                                  (LON < min_lon) |
-                                                                  (LON > max_lon)
-)
-
 
 #Remove columns that have only NAs
 combined_resight_data_total <- combined_resight_data_total %>% select_if(~!all(is.na(.) | . == 0))
@@ -2227,8 +2250,65 @@ combined_resight_data_total <- combined_resight_data_total %>%
 
     )
   )
-    #adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
-    combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
+#adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
+combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
+
+
+##Converting and plotting resight locations
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
+combined_resight_data_total$NORTHING[is.na(combined_resight_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_resight_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_resight_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_resight_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_resight_data_total$LAT[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+combined_resight_data_total$LON[combined_resight_data_total$EASTING == 0 & combined_resight_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_resight_data_total <- combined_resight_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+resight_inside_kig <- combined_resight_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(resight_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "red",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("TARSALCODE: ", combined_header_data_total$TARSALCODE)
+  )
+
+
 
 
 #Export the combined data frame to .csv
@@ -2242,8 +2322,9 @@ knitr:: kable(combined_resight_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Resight' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "COMMENTS" and "Comments"; these columns were combined. In the column labeled "FIRST_MARK" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. In the column labeled "RESIGHT_METHOD" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. One of the entries in the "RESIGHT_METHOD" described both an existing data category, and included additional notes; the additional notes were added to the "COMMENTS" column. A usable, .csv, table is then written and exported to the "output" folder.  
-
+The code chunk above is the process of combining the two resight data frames previously created in sections 6c and 12c. The 'NORTHING' column data type is standardized. The two data frames are then combined. After combining, formatting adjustments were made to make the table more usable. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. Columns "TARSUS", "TARSAL", and "TARSALCODE" collect the same data, these columns were combined into a single column labeled "TARSALCODE". For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "COMMENTS" and "Comments"; these columns were combined. In the column labeled "FIRST_MARK" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. In the column labeled "RESIGHT_METHOD" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. One of the entries in the "RESIGHT_METHOD" described both an existing data category, and included additional notes; the additional notes were added to the "COMMENTS" column. 
+All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. After the locations are converted to Latitude and Longitude, a boundary defining Kigigak Island area is created with minimum and maximum acceptable latitude and longitude values. A new column is created labeled TRUE_LOCATION with the purpose of describing whether the Latitude and Longitude columns reflect a location that is possibly accurate. If the location is outside of the Kigigak area boundary, we know certainly that those coordinates are inaccurate (will get a label "no" in column), as all data was collected on the Kigigak Island; if the coordinates are within the boundary of Kigigak (will get the label "yes" in the column), there is still the possibility that the coordinates do not accurately represent the location, but there is no way to ensure coordinate accuracy within the island. A dataframe is created that includes only points inside the Kigigak boundary. This data is used to plot the locations using 'leaflet' package. 
+A usable, .csv, table is then written and exported to the "output" folder.  
 
 ##### 17.
 
@@ -2265,6 +2346,7 @@ visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$C
 #Combining the two data frames into one
 combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
 
+##Post combined table processing
 #Changing incorrect years "1900" and "1902" to correct "2000" and "2002"
 combined_visit_data_total <- combined_visit_data_total %>%
   mutate(DATE = case_when(
@@ -2280,55 +2362,6 @@ combined_visit_data_total$VISIT_ID <- paste(combined_visit_data_total$DATE, comb
 combined_visit_data_total <- combined_visit_data_total %>% distinct(VISIT_ID, .keep_all = TRUE)
 #Move the "VISIT_ID" column to the left for ease of viewing
 combined_visit_data_total <- combined_visit_data_total[, c("VISIT_ID", setdiff(names(combined_visit_data_total), "VISIT_ID"))]
-
-#Using the Northing Easting coordinates to create Lat Long columns using decimal degrees
-
-# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
-combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
-combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
-
-# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
-
-# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
-sf_combined <- st_transform(sf_combined, crs = 4326)
-
-# Extract Latitude and Longitude from transformed coordinates
-combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
-
-# Convert the placeholder 0 values back to NA
-combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
-
-#Plot the converted LAT LON values
-leaflet(combined_visit_data_total)%>%
-  addProviderTiles('Esri.WorldImagery')%>%
-  addCircleMarkers(
-    lng = ~LON,
-    lat = ~LAT,
-    radius = 4,
-    color = "pink",
-    stroke = FALSE,
-    fillOpacity = 0.7,
-    popup = ~paste("NEST_NO", combined_visit_data_total$NEST_NO)
-  )
-
-#identify data points that have lat long values outside the Kigigak area
-
-#Define Kig area boundaries
-min_lat <- 60.814000
-max_lat <- 60.879000
-min_lon <- -165.029600
-max_lon <- -164.883000
-
-#Filter for rows outside Kig area
-visit_rows_outside_kig <- combined_visit_data_total %>% filter((LAT < min_lat) |
-                                                                  (LAT > max_lat) |
-                                                                  (LON < min_lon) |
-                                                                  (LON > max_lon)
-)
-
 
 #Remove columns that have only NAs
 combined_visit_data_total <- combined_visit_data_total %>% select_if(~!all(is.na(.)))
@@ -2385,6 +2418,63 @@ combined_visit_data_total <- combined_visit_data_total %>%
     )
   )
 
+
+##Converting and plotting visit locations
+# Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
+combined_visit_data_total$EASTING[is.na(combined_visit_data_total$EASTING)] <- 0
+combined_visit_data_total$NORTHING[is.na(combined_visit_data_total$NORTHING)] <- 0
+
+# Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
+sf_combined <- st_as_sf(combined_visit_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+
+# Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
+sf_combined <- st_transform(sf_combined, crs = 4326)
+
+# Extract Latitude and Longitude from transformed coordinates
+combined_visit_data_total$LAT <- st_coordinates(sf_combined)[,2]
+combined_visit_data_total$LON <- st_coordinates(sf_combined)[,1]
+
+# Convert the placeholder 0 values back to NA
+combined_visit_data_total$LAT[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+combined_visit_data_total$LON[combined_visit_data_total$EASTING == 0 & combined_visit_data_total$NORTHING == 0] <- NA
+
+# Define Kigigak Island bounding box
+min_lat <- 60.814000
+max_lat <- 60.879000
+min_lon <- -165.029600
+max_lon <- -164.883000
+
+# Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
+combined_visit_data_total <- combined_visit_data_total %>%
+  mutate(
+    TRUE_LOCATION = case_when(
+      !is.na(LAT) & !is.na(LON) &
+        LAT >= min_lat & LAT <= max_lat &
+        LON >= min_lon & LON <= max_lon ~ "yes",
+      TRUE ~ "no"
+    )
+  )
+
+# Create filtered dataset for points INSIDE Kigigak
+visit_inside_kig <- combined_visit_data_total %>%
+  filter(TRUE_LOCATION == "yes")
+
+
+#Plot the converted LAT LON values
+leaflet(visit_inside_kig) %>%
+  addProviderTiles('Esri.WorldImagery')%>%
+  addCircleMarkers(
+    lng = ~LON,
+    lat = ~LAT,
+    radius = 5,
+    color = "pink",
+    stroke = FALSE,
+    fillOpacity = 0.7,
+    popup = ~paste("VISIT_ID: ", combined_visit_data_total$VISIT_ID)
+  )
+
+
+
 #Export combined data frame as a .csv
 write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")
 
@@ -2396,4 +2486,7 @@ knitr:: kable(combined_visit_data_total)
 ```
 </details>
 
-The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. The output of this code should be the entirety of 'Header' data collected from 1994-2015. After the locations are converted to Latitude and Longitude, the locations are plotted and using the 'leaflet' package and exported as a html file located in the output folder. The area of Kigigak island is defined by expressing minimum and maximum latitude and longitude values. Those values are used to filter out the data points that have coordinates that lie outside of the defined Kigigak area and creates a data frame of those values. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "HEN_STAT" and "HEN_STATUS"; these columns were combined. An additional two columns collected the same data with slight variation in name, labeled "EGGS_INVI" and "EGGS_INVIABLE"; these columns were combined. In the column labeled "STATUS" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match. A usable, .csv, table is then written and exported to the "output" folder.   
+The code chunk above is the process of combining the two visit data frames previously created in sections 6d and 12d. Several columns data types needed to be standardized including, 'PHOTO', 'TIME', and 'CANDLE2'. The data frames are then combined. After combining, formatting adjustments were made to make the table more usable. There was a mistake in the data entry in the years 2000 and some of 2002, where the year was entered as 1900 and 1902; these dates were transformed to the correct year. A unique identifying column is then created by combining 'DATE' and 'NEST_NO' to create, 'VISIT_ID'. For some years, the data tables used for collection were used for other projects, because of this, there are some columns in which no data was collected; these columns, containing only NAs are removed from the table. There were two columns that collected the same data with slight variation in name, labeled "HEN_STAT" and "HEN_STATUS"; these columns were combined. An additional two columns collected the same data with slight variation in name, labeled "EGGS_INVI" and "EGGS_INVIABLE"; these columns were combined. In the column labeled "STATUS" there were many variations of data types that mean the same thing; these labels were gone through by hand, determined the category they represent and these entries were altered to match.
+All of the coordinates are currently expressed in UTM format using Eastings and Northings. To make these coordinates more useful for plotting, they are converted into the WGS84 system using Latitude and Longitude. This process begins by converting any value in the 'EASTING' and 'NORTHING' columns that is 'NA' to 0, as the sf package required there to be no NAs when converting; these will be converted back into NAs after the conversion process. Then a function from the sf package converts the columns 'EASTING' and 'NORTHING' into a spatial object, specifying the coordinate reference system to UTM zone 33, which uses the EPSG code 32603. The coordinate reference system is then transformed from UTM to WGS84 using the EPSG code 4326. The transformed coordinated are then extracted and placed into new columns, 'LAT' and 'LON'. The placeholder 0s are then converted back into NAs. After the locations are converted to Latitude and Longitude, a boundary defining Kigigak Island area is created with minimum and maximum acceptable latitude and longitude values. A new column is created labeled TRUE_LOCATION with the purpose of describing whether the Latitude and Longitude columns reflect a location that is possibly accurate. If the location is outside of the Kigigak area boundary, we know certainly that those coordinates are inaccurate (will get a label "no" in column), as all data was collected on the Kigigak Island; if the coordinates are within the boundary of Kigigak (will get the label "yes" in the column), there is still the possibility that the coordinates do not accurately represent the location, but there is no way to ensure coordinate accuracy within the island. A dataframe is created that includes only points inside the Kigigak boundary. This data is used to plot the locations using 'leaflet' package. 
+A usable, .csv, table is then written and exported to the "output" folder.
+

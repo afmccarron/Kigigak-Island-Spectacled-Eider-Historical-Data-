@@ -46,11 +46,11 @@ sapply(package_vec, install.load.package)
 header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.2005$PHOTO)
 header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
 
-#Convert EASTING columns to character in both data frames
+#Convert EASTING columns to numeric (double) in both data frames
 header_combined_data1994.2005$EASTING <- as.numeric(header_combined_data1994.2005$EASTING)
 header_combined_data2006.2015$EASTING <- as.numeric(header_combined_data2006.2015$EASTING)
 
-#Convert NORTHING columns to character in both data frames
+#Convert NORTHING columns to numeric (double) in both data frames
 header_combined_data1994.2005$NORTHING <- as.numeric(header_combined_data1994.2005$NORTHING)
 header_combined_data2006.2015$NORTHING <- as.numeric(header_combined_data2006.2015$NORTHING)
 
@@ -134,22 +134,22 @@ combined_header_data_total_reduced <- combined_header_data_total %>%
 
 ##Converting and plotting the nest site locations
 #Converting NA values to a placeholder value
-combined_header_data_total$EASTING[is.na(combined_header_data_total$EASTING)] <- 0
-combined_header_data_total$NORTHING[is.na(combined_header_data_total$NORTHING)] <- 0
+combined_header_data_total_reduced$EASTING[is.na(combined_header_data_total_reduced$EASTING)] <- 0
+combined_header_data_total_reduced$NORTHING[is.na(combined_header_data_total_reduced$NORTHING)] <- 0
 
 # Convert to sf object with the UTM coordinate system (e.g., UTM zone 33N)
-sf_combined <- st_as_sf(combined_header_data_total, coords = c("EASTING", "NORTHING"), crs = 32603)
+sf_combined <- st_as_sf(combined_header_data_total_reduced, coords = c("EASTING", "NORTHING"), crs = 32603)
 
 # Transform the coordinates to WGS84 (Latitude/Longitude in decimal degrees)
 sf_combined <- st_transform(sf_combined, crs = 4326)
 
 # Extract Latitude and Longitude from transformed coordinates
-combined_header_data_total$LAT <- st_coordinates(sf_combined)[,2]
-combined_header_data_total$LON <- st_coordinates(sf_combined)[,1]
+combined_header_data_total_reduced$LAT <- st_coordinates(sf_combined)[,2]
+combined_header_data_total_reduced$LON <- st_coordinates(sf_combined)[,1]
 
 # Convert the placeholder 0 values back to NA
-combined_header_data_total$LAT[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
-combined_header_data_total$LON[combined_header_data_total$EASTING == 0 & combined_header_data_total$NORTHING == 0] <- NA
+combined_header_data_total_reduced$LAT[combined_header_data_total_reduced$EASTING == 0 & combined_header_data_total_reduced$NORTHING == 0] <- NA
+combined_header_data_total_reduced$LON[combined_header_data_total_reduced$EASTING == 0 & combined_header_data_total_reduced$NORTHING == 0] <- NA
 
 # Define Kigigak Island bounding box
 min_lat <- 60.814000
@@ -158,7 +158,7 @@ min_lon <- -165.029600
 max_lon <- -164.883000
 
 # Create TRUE_LOCATION column, filtering the locations that are not on Kigigak Island
-combined_header_data_total <- combined_header_data_total %>%
+combined_header_data_total_reduced <- combined_header_data_total_reduced %>%
   mutate(
     TRUE_LOCATION = case_when(
       !is.na(LAT) & !is.na(LON) &
@@ -169,7 +169,7 @@ combined_header_data_total <- combined_header_data_total %>%
   )
 
 # Create filtered dataset for points INSIDE Kigigak
-header_inside_kig <- combined_header_data_total %>%
+header_inside_kig <- combined_header_data_total_reduced %>%
   filter(TRUE_LOCATION == "yes")
 
 
@@ -183,7 +183,7 @@ leaflet(header_inside_kig) %>%
     color = "blue",
     stroke = FALSE,
     fillOpacity = 0.7,
-    popup = ~paste("HEADER_ID: ", combined_header_data_total$HEADER_ID)
+    popup = ~paste("HEADER_ID: ", combined_header_data_total_reduced$HEADER_ID)
   )
 
 
@@ -270,6 +270,10 @@ combined_markdata_total <- combined_markdata_total %>%
     )
   )
 
+#changing the name of column: "Date originally banded" to "DATE_ORIGINAL_BAND" so the name is less confusing in .csv format
+combined_markdata_total <- combined_markdata_total %>% rename(DATE_ORIGINAL_BAND =
+                                                                `Date Originally
+Banded`)
 
 
 ##Converting and plotting MARK site locations
@@ -335,8 +339,8 @@ write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
 #combining resight data from 1994-2005 and 2006-2015
 
 #standardizing the NORTHING column to be able to combine
-resight_combined_data1994.2005$NORTHING <- as.character(resight_combined_data1994.2005$NORTHING)
-resight_combined_data2006.2015$NORTHING <- as.character(resight_combined_data2006.2015$NORTHING)
+resight_combined_data1994.2005$NORTHING <- as.numeric(resight_combined_data1994.2005$NORTHING)
+resight_combined_data2006.2015$NORTHING <- as.numeric(resight_combined_data2006.2015$NORTHING)
 
 #combining data frames
 combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
@@ -411,8 +415,6 @@ combined_resight_data_total <- combined_resight_data_total %>%
   )
 #adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
 combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
-
-
 
 ##Converting and plotting resight locations
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
@@ -493,7 +495,6 @@ visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$C
 
 #Combining the two data frames into one
 combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
-
 
 
 ##Post combined table processing

@@ -1,6 +1,7 @@
 #'#####################################################################################
 #' Project: [Kigigak Island Spectacled Eider Historical Data Standardization and Compilation]
 #' Contents: [Standardizing and Compiling data files collected from years 2006-2015 ("Excel years")]
+#'  - Installing and loading required packages
 #'  - Identifying all file types in folders from Eider2006-Eider2015
 #'  - Identifying file names and column names within each file for the .xls and .xlsx files from folders Eider2006-Eider2015
 #'  - Creating reference data frame for each of the tables to identify each of the required column names
