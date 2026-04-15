@@ -231,14 +231,20 @@ Header_comparison_results2006.2015 <- lapply(Header_excel_files_eider2006.2015, 
 #####################
 #comparing markdata excel files to reference files
 
-# List all excel files from those folders, including only files that have 'markdata' in the name
+# List all excel files from those folders, including only files that have 'markdata', 'brood(s)', or 'banding' in the name
 markdata_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.2015, function(folder) {
-  # List excel files and filter for files with "markdata" or "mark" in the name (in 2006, markdata was named MARK)
+  # List excel files and filter for files with "markdata","mark", "broods", or "banding" in the name (in 2006, markdata was named MARK)
   excel_files_all <- list.files(path = folder, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
-  excel_files_filtered <- excel_files_all[grepl("mark|markdata", basename(excel_files_all), ignore.case = TRUE)]
+  file_names <- basename(excel_files_all)
+
+  excel_files_filtered <- excel_files_all[
+    grepl("markdata|\\bmark\\b", file_names, ignore.case = TRUE) |
+      grepl("broods?", file_names, ignore.case = TRUE) |
+      grepl("banding", file_names, ignore.case = TRUE)
+  ]
   return(excel_files_filtered)
 }))
-# View the filtered list of excel files with 'markdata' in the name
+# View the filtered list of excel files with 'markdata' or 'brood(s)' in the name
 print(markdata_excel_files_eider2006.2015)
 
 #Comparing columns of the Header files to the markdata reference dataframe
@@ -652,7 +658,6 @@ column_rename_map_resight <- list(
   "HOW \nRESIGHTED" = "RESIGHT_METHOD",
   "HOW \r\nRESIGHTED" = "RESIGHT_METHOD"
 )
-
 
 # First loop: Collect all unique column names across all files
 for (file in resight_excel_files_eider2006.2015) {
