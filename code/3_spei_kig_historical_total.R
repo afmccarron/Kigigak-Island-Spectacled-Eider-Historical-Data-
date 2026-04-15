@@ -40,22 +40,22 @@ sapply(package_vec, install.load.package)
 
 ################################
 
-#Combining header data from 1994-2005 and 2006-2015
+#Combining header data from 1992-2005 and 2006-2015
 
 # Convert the PHOTO column to character in both data frames
-header_combined_data1994.2005$PHOTO <- as.character(header_combined_data1994.2005$PHOTO)
+header_combined_data1992.2005$PHOTO <- as.character(header_combined_data1992.2005$PHOTO)
 header_combined_data2006.2015$PHOTO <- as.character(header_combined_data2006.2015$PHOTO)
 
 #Convert EASTING columns to numeric (double) in both data frames
-header_combined_data1994.2005$EASTING <- as.numeric(header_combined_data1994.2005$EASTING)
+header_combined_data1992.2005$EASTING <- as.numeric(header_combined_data1992.2005$EASTING)
 header_combined_data2006.2015$EASTING <- as.numeric(header_combined_data2006.2015$EASTING)
 
 #Convert NORTHING columns to numeric (double) in both data frames
-header_combined_data1994.2005$NORTHING <- as.numeric(header_combined_data1994.2005$NORTHING)
+header_combined_data1992.2005$NORTHING <- as.numeric(header_combined_data1992.2005$NORTHING)
 header_combined_data2006.2015$NORTHING <- as.numeric(header_combined_data2006.2015$NORTHING)
 
 # Now combine the data frames
-combined_header_data_total <- bind_rows(header_combined_data1994.2005, header_combined_data2006.2015)
+combined_header_data_total <- bind_rows(header_combined_data1992.2005, header_combined_data2006.2015)
 
 
 ##Post combined table processing
@@ -188,16 +188,16 @@ leaflet(header_inside_kig) %>%
 
 
 #Export combined data frame to .csv
-write.csv(combined_header_data_total_reduced, "output/combined_header_data_1994-2015.csv")
+write.csv(combined_header_data_total_reduced, "output/combined_header_data_1992-2015.csv")
 #Export associated spp data frame to .csv
-write.csv(associated_spp_header_combined, "output/associated_spp_header_data_1994-2015.csv")
+write.csv(associated_spp_header_combined, "output/associated_spp_header_data_1992-2015.csv")
 
 
 #######################################
 
 #Combining markdata data from 1994-2005 and 2006-2015
 
-combined_markdata_total <- bind_rows(markdata_combined_data1994.2005, markdata_combined_data2006.2015)
+combined_markdata_total <- bind_rows(markdata_combined_data1992.2005, markdata_combined_data2006.2015)
 
 ##Post combined table processing
 #Changing the date from "1900" to "2000" for data collected in 2000
@@ -270,9 +270,6 @@ combined_markdata_total <- combined_markdata_total %>%
     )
   )
 
-#changing the name of column: "Date originally banded" to "DATE_ORIGINAL_BAND" so the name is less confusing in .csv format
-combined_markdata_total <- combined_markdata_total %>% rename(DATE_ORIGINAL_BAND = `Date Originally
-Banded`)
 
 
 ##Converting and plotting MARK site locations
@@ -329,20 +326,19 @@ leaflet(markdata_inside_kig) %>%
     popup = ~paste("MARK_ID: ", combined_markdata_total$MARK_ID)
   )
 
-
 #Exporting combined data frame to .csv
 write.csv(combined_markdata_total, "output/combined_markdata_1994-2015.csv")
 
 ###################################
 
-#combining resight data from 1994-2005 and 2006-2015
+#combining resight data from 1992-2005 and 2006-2015
 
 #standardizing the NORTHING column to be able to combine
-resight_combined_data1994.2005$NORTHING <- as.numeric(resight_combined_data1994.2005$NORTHING)
+resight_combined_data1992.2005$NORTHING <- as.numeric(resight_combined_data1992.2005$NORTHING)
 resight_combined_data2006.2015$NORTHING <- as.numeric(resight_combined_data2006.2015$NORTHING)
 
 #combining data frames
-combined_resight_data_total <- bind_rows(resight_combined_data1994.2005, resight_combined_data2006.2015)
+combined_resight_data_total <- bind_rows(resight_combined_data1992.2005, resight_combined_data2006.2015)
 
 
 ##Post combined table processing
@@ -473,27 +469,27 @@ leaflet(resight_inside_kig) %>%
 
 
 #Export the combined data frame to .csv
-write.csv(combined_resight_data_total, "output/combined_resight_data_1994-2015.csv")
+write.csv(combined_resight_data_total, "output/combined_resight_data_1992-2015.csv")
 
 
 ####################################
 
-#Combining visit data from 1994-2005 and 2006-2015
+#Combining visit data from 1992-2005 and 2006-2015
 
 # Convert the PHOTO column to character in both data frames
-visit_combined_data1994.2005$PHOTO <- as.character(visit_combined_data1994.2005$PHOTO)
+visit_combined_data1992.2005$PHOTO <- as.character(visit_combined_data1992.2005$PHOTO)
 visit_combined_data2006.2015$PHOTO <- as.character(visit_combined_data2006.2015$PHOTO)
 
 #Convert TIME column to integer in both data frames
-visit_combined_data1994.2005$TIME <- as.integer(visit_combined_data1994.2005$TIME)
+visit_combined_data1992.2005$TIME <- as.integer(visit_combined_data1992.2005$TIME)
 visit_combined_data2006.2015$TIME <- as.integer(visit_combined_data2006.2015$TIME)
 
 #Convert CANDLE2 column to integer in both data frames
-visit_combined_data1994.2005$CANDLE2 <- as.double(visit_combined_data1994.2005$CANDLE2)
+visit_combined_data1992.2005$CANDLE2 <- as.double(visit_combined_data1992.2005$CANDLE2)
 visit_combined_data2006.2015$CANDLE2 <- as.double(visit_combined_data2006.2015$CANDLE2)
 
 #Combining the two data frames into one
-combined_visit_data_total <- bind_rows(visit_combined_data1994.2005, visit_combined_data2006.2015)
+combined_visit_data_total <- bind_rows(visit_combined_data1992.2005, visit_combined_data2006.2015)
 
 
 ##Post combined table processing
@@ -626,5 +622,45 @@ leaflet(visit_inside_kig) %>%
 
 
 #Export combined data frame as a .csv
-write.csv(combined_visit_data_total, "output/combined_visit_data_1994-2015.csv")
+write.csv(combined_visit_data_total, "output/combined_visit_data_1992-2015.csv")
+
+##################################################################################
+#This section includes all columns necessary to make all data tables stand-alone
+#This section is included here to pull full columns from data that has already been compiled.
+
+##################################
+#Add a DATE_FIRST_FOUND column to the combined_header_total table
+#This date column is added from finding the minimum date value from the visit table per NEST_NO
+
+#Get the minimum date per NEST_NO from visit table,
+first_found_dates <- combined_visit_data_total %>%
+  group_by(NEST_NO) %>%
+  summarise(
+    DATE_FIRST_FOUND = if (all(is.na(DATE))) NA else min(DATE, na.rm = TRUE),
+    .groups = "drop"
+  )
+#Join this back to the header table
+combined_header_data_total_reduced <- combined_header_data_total_reduced %>%
+  left_join(first_found_dates, by = "NEST_NO")
+
+####################################
+
+#Adding STUDYAREA to resight table
+
+
+
+####################################
+
+#Adding STUDYAREA to egg table, joined by NEST_NO and Year (to avoid duplicates)
+
+#Creating a temporary data frame with no repeating NEST_NO values from header table
+studyarea_lookup <- combined_header_data_total_reduced %>%
+  distinct(NEST_NO, Year, STUDYAREA)
+
+# using temporary data frame to join STUDYAREA column to Egg data table
+egg_combined_data1992.2005 <- egg_combined_data1992.2005 %>%
+  left_join(
+    studyarea_lookup,
+    by = c("NEST_NO", "Year")
+  )
 
