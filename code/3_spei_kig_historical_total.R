@@ -35,7 +35,7 @@ install.load.package <- function(x) {
   require(x, character.only = TRUE)
 }
 
-package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf", "leaflet")
+package_vec <- c("workflowr", "tidyverse", "foreign", "dplyr", "here", "tools", "stringr","readxl", "purrr", "lubridate", "sp", "sf", "leaflet", "units")
 sapply(package_vec, install.load.package)
 
 ################################
@@ -411,6 +411,15 @@ combined_resight_data_total <- combined_resight_data_total %>%
 #adding original, long text value from one entry in RESIGHT_METHOD to comments, after changing value to proper data value above
 combined_resight_data_total$COMMENTS[6745] <- "nasal disk resighted visually, tarsal band resighted via camera"
 
+#combining column "...24" with COMMENTS
+combined_resight_data_total <- combined_resight_data_total %>%
+  unite("COMMENTS", COMMENTS, ...24, sep = ". ", remove = TRUE)
+  #results in a "comment.comment" format due to columns being combined.
+
+#removing column "...28" as it provides no useable data
+combined_resight_data_total <- combined_resight_data_total %>%
+  select(-...28)
+
 ##Converting and plotting resight locations
 # Replace NAs in EASTING and NORTHING with placeholder value (e.g., 0)
 combined_resight_data_total$EASTING[is.na(combined_resight_data_total$EASTING)] <- 0
@@ -645,8 +654,85 @@ combined_header_data_total_reduced <- combined_header_data_total_reduced %>%
 
 ####################################
 
+#Adding NEST_NO to markdata years 2014 and 2015 based on lat long values in header data
+
+#Split data
+mark_known <- combined_markdata_total %>%
+  filter(!is.na(NEST_NO))   # already good
+
+mark_missing <- combined_markdata_total %>%
+  filter(is.na(NEST_NO))    # needs spatial matching
+
+#Remove rows with missing coordinates from the matching pool
+mark_missing_valid <- mark_missing %>%
+  filter(!is.na(LATITITUDE), !is.na(LONGITUDE))
+
+mark_missing_no_coords <- mark_missing %>%
+  filter(is.na(LATITITUDE) | is.na(LONGITUDE)) %>%
+  mutate(match_distance_m = NA)
+
+#Convert to sf
+header_sf <- combined_header_data_total_reduced %>%
+  filter(!is.na(LAT), !is.na(LON)) %>%
+  st_as_sf(coords = c("LON", "LAT"), crs = 4326) %>%
+  st_transform(3338)
+
+mark_sf <- mark_missing_valid %>%
+  st_as_sf(coords = c("LONGITUDE", "LATITITUDE"), crs = 4326) %>%
+  st_transform(3338)
+
+#Match within same year
+threshold <- set_units(10, "m")
+
+matched_sf <- purrr::map_dfr(unique(mark_sf$YEAR), function(y) {
+
+  mark_subset   <- mark_sf   %>% filter(YEAR == y)
+  header_subset <- header_sf %>% filter(Year == y)
+
+  nearest_index <- st_nearest_feature(mark_subset, header_subset)
+
+  dist_to_nearest <- st_distance(
+    mark_subset,
+    header_subset[nearest_index, ],
+    by_element = TRUE
+  )
+
+  mark_subset %>%
+    mutate(
+      NEST_NO = ifelse(
+        dist_to_nearest <= threshold,
+        header_subset$NEST_NO[nearest_index],
+        NA
+      ),
+      match_distance_m = set_units(dist_to_nearest, "m")
+    )
+})
+
+#Recombine EVERYTHING
+combined_markdata_total_updated <- bind_rows(
+  mark_known,
+  matched_sf %>% st_drop_geometry(),
+  mark_missing_no_coords
+)
+####################################
 #Adding STUDYAREA to resight table
 
+#Add the STUDYAREA to resight table based on a correlating NEST_NO and Year from Header table
+combined_resight_data_total <- combined_resight_data_total %>%
+  left_join(
+    combined_header_data_total_reduced %>%
+      select(NEST_NO, Year, STUDYAREA) %>%
+      distinct(),
+    by = c("NEST_NO", "Year")
+  ) %>%
+  #If there is no correlating NEST_NO and Year, if TRUE_LOCATION = yes, the STUDYAREA is defaulted to KIGI
+  mutate(
+    STUDYAREA = case_when(
+      !is.na(STUDYAREA) ~ STUDYAREA,
+      is.na(STUDYAREA) & TRUE_LOCATION == "yes" ~ "KIGI",
+      TRUE ~ STUDYAREA
+    )
+  )
 
 
 ####################################
