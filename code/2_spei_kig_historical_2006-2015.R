@@ -28,7 +28,7 @@ sapply(package_vec, install.load.package)
 
 #Identifying file types, file names, and columns
 
-#Identifying all file types within folders Eider1994-Eider2005
+#Identifying all file types within folders Eider2006-Eider2015
 
 #List of folder paths to process
 folders_pt2 <- c("data/Eider2006",
@@ -78,10 +78,10 @@ process_folder <- function(folder_path) {
   # List all Excel files in the folder
   files <- list.files(path = folder_path, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
 
-  # Function to extract column names from each DBF file
+  # Function to extract column names from each excel file
   get_file_columns <- function(file_path) {
     tryCatch({
-      # Read the DBF file
+      # Read the excel file
       df <- read_excel(file_path)
       # Return the file name and column names
       data.frame(
@@ -100,7 +100,7 @@ process_folder <- function(folder_path) {
 
   return(file_info_df)}
 
-# Define a vector of folder paths to Eider data from 1994-2005
+# Define a vector of folder paths to Eider data from 2006-2015
 eider_data_folders_2006.2015 <- c("data/Eider2006",
                                   "data/Eider2007",
                                   "data/Eider2008",
@@ -231,20 +231,19 @@ Header_comparison_results2006.2015 <- lapply(Header_excel_files_eider2006.2015, 
 #####################
 #comparing markdata excel files to reference files
 
-# List all excel files from those folders, including only files that have 'markdata', 'brood(s)', or 'banding' in the name
+# List all excel files from those folders, including only files that have 'markdata', or 'banding' in the name
 markdata_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.2015, function(folder) {
-  # List excel files and filter for files with "markdata","mark", "broods", or "banding" in the name (in 2006, markdata was named MARK)
+  # List excel files and filter for files with "markdata","mark", or "banding" in the name (in 2006, markdata was named MARK)
   excel_files_all <- list.files(path = folder, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
   file_names <- basename(excel_files_all)
 
   excel_files_filtered <- excel_files_all[
     grepl("markdata|\\bmark\\b", file_names, ignore.case = TRUE) |
-      grepl("broods?", file_names, ignore.case = TRUE) |
       grepl("banding", file_names, ignore.case = TRUE)
   ]
   return(excel_files_filtered)
 }))
-# View the filtered list of excel files with 'markdata' or 'brood(s)' in the name
+# View the filtered list of excel files with 'markdata' or 'banding' in the name
 print(markdata_excel_files_eider2006.2015)
 
 #Comparing columns of the Header files to the markdata reference dataframe
@@ -276,9 +275,10 @@ compare_columns <- function(excel_file, markdata_reference_df) {
 # Apply the comparison function to all filtered .dbf files with 'markdata' in the name
 markdata_comparison_results2006.2015 <- lapply(markdata_excel_files_eider2006.2015, compare_columns, markdata_reference_df = markdata_reference_df)
 #There is no markdata collected for years 2007 and 2015
-#years 2006 and 2008 columns 'NASAL' and 'TARSAL' need to be changed to 'NASALCODE' and 'TARSALCODE'
+#years 2006-2008 columns 'NASAL' and 'TARSAL' need to be changed to 'NASALCODE' and 'TARSALCODE'
 #years 2009-2011 columns 'NASAL' 'TARSAL' 'NEST #' 'BAND NUMBER' 'SPECIES' need changed to 'NASALCODE' 'TARSALCODE' 'NEST_NO' 'BANDNUMBER' 'SPECIESCOD'
 #years 2012-2014 columns 'NASAL' 'TARSAL' 'NEST #' 'BAND NUMBER' 'SPECIES' 'WT (G)' CULMEN (MM)' 'TARSUS (MM)' need changed to 'NASALCODE' 'TARSALCODE' 'NEST_NO' 'BANDNUMBER' 'SPECIESCOD' 'WT' 'CULMEN' 'TARSUS'
+#year 2015 'NEST_NO' does not exist. 'BAND NUMBER', 'SPECIES', 'Bird Weight', 'Culmen Length', 'Tarsus Length', 'Banding Date', 'Aux Marker Code' need changed to 'BANDNUMBER', 'SPECIESCOD', 'WT', 'CULMEN', 'TARSUS', 'DATE', 'TARSALCODE'
 
 
 ############################
@@ -517,8 +517,9 @@ column_rename_map_markdata <- list(
   "TARSAL" = "TARSALCODE",
   "NEST #" = "NEST_NO",
   "NEST#" = "NEST_NO",
-  "Band Number" = "BANDNUMBER",
-  "BAND NUMBER" = "BANDNU_COMPLETE",
+  "Band Number" = "BAND_RAW",
+  "BAND NUMBER" = "BAND_RAW",
+  "BANDNUMBER" = "BAND_RAW",
   "SPECIES" = "SPECIESCOD",
   "WT(g)" = "WT",
   "WT (g)" = "WT",
@@ -529,7 +530,12 @@ column_rename_map_markdata <- list(
   "REPLACEMENT \nBAND" = "REPLCMT_BAND",
   "REPLACEMENT \nTARSAL" = "REPLCMT_TARSAL",
   "REPLACEMENT \nNASAL" = "REPLCMT_NASAL",
-  "DATE ORIGINALLY \nBANDED" = "DT_ORIG_BAND"
+  "DATE ORIGINALLY \nBANDED" = "DT_ORIG_BAND",
+  "Bird Weight" = "WT",
+  "Culmen Length" = "CULMEN",
+  "Tarsus Length" = "TARSUS",
+  "Banding Date" = "DATE",
+  "Aux Marker Code" = "TARSALCODE"
 )
 
 
@@ -553,18 +559,41 @@ for (file in markdata_excel_files_eider2006.2015) {
     }
   })
 
-  #convert EASTING and NORTHING values to numeric (double)
-  df <- df %>%
-    mutate(
-      across(c(EASTING, NORTHING), ~ {
-        x <- as.character(.)
-        x <- trimws(x)
-        x <- gsub(",", "", x)
-        x <- gsub("[^0-9.-]", "", x)
-        x[x == ""] <- NA
-        as.numeric(x)
-      })
-    )
+  #Clean BAND_RAW
+  if ("BAND_RAW" %in% colnames(df)) {
+    df$BAND_RAW <- as.character(df$BAND_RAW)
+    df$BAND_RAW <- trimws(df$BAND_RAW)
+    df$BAND_RAW[df$BAND_RAW == ""] <- NA
+  }
+
+  #Clean PREFIXNUMB
+  if ("PREFIXNUMB" %in% colnames(df)) {
+    df$PREFIXNUMB <- as.character(df$PREFIXNUMB)
+    df$PREFIXNUMB <- trimws(df$PREFIXNUMB)
+    df$PREFIXNUMB[df$PREFIXNUMB == ""] <- NA
+  }
+
+  #Initialize output columns
+  df$BANDNU_SUFFIX <- NA_character_
+  df$BANDNU_COMPLETE <- NA_character_
+
+  #Separting values in BAND_RAW to BANDNU_COMPLETE and BANDNU_SUFFIX based on data entry
+  if ("BAND_RAW" %in% colnames(df)) {
+
+    is_full <- !is.na(df$BAND_RAW) &
+      (grepl("-", df$BAND_RAW) | nchar(df$BAND_RAW) >= 8)
+
+    df$BANDNU_COMPLETE[is_full] <- df$BAND_RAW[is_full]
+    df$BANDNU_SUFFIX[!is_full] <- df$BAND_RAW[!is_full]
+  }
+
+  #When entries contain both prefix and suffix band numbers, they are combined and entered into BANDNU_COMPLETE
+  if ("PREFIX" %in% colnames(df)) {
+
+    has_both <- !is.na(df$PREFIXNUMB) & !is.na(df$BANDNU_SUFFIX)
+
+    df$BANDNU_COMPLETE[has_both] <- paste0(df$PREFIXNUMB[has_both], "-", df$BANDNU_SUFFIX[has_both])
+  }
 
   # Standardize 'RECAP' column to logical type if it exists
   if ("RECAP" %in% colnames(df)) {
@@ -614,6 +643,24 @@ for (i in 1:length(markdata_data_list2006.2015)) {
 
   # Standardize specific columns to appropriate types:
 
+  #convert EASTING and NORTHING values to numeric (double)
+  df <- df %>%
+    mutate(
+      across(any_of(c("EASTING", "NORTHING")), ~ {
+        x <- as.character(.)
+        x <- trimws(x)
+        x <- gsub(",", "", x)
+        x <- gsub("[^0-9.-]", "", x)
+        x[x == ""] <- NA
+        as.numeric(x)
+      })
+    )
+
+  # Standardize 'DATE' column to Date type
+  if ("DATE" %in% colnames(df)) {
+    df$DATE <- as.Date(df$DATE, format="%Y-%m-%d")  # Adjust format if necessary
+  }
+
   # Ensure 'RECAP' is standardized to logical type
   if ("RECAP" %in% colnames(df)) {
     df$RECAP <- as.logical(df$RECAP)
@@ -631,9 +678,108 @@ for (i in 1:length(markdata_data_list2006.2015)) {
   markdata_data_list2006.2015[[i]] <- df
 }
 
-# Now, combine all the data frames into one
+#Combine all the data frames into one
 markdata_combined_data2006.2015 <- bind_rows(markdata_data_list2006.2015)
 
+###########
+#Reading brood capture data and combining it with markdata table
+#Brood capture data was not included from years 1992-2005, as any files dedicated to brood data are either corrupted, empty, or do not contain enough relevant data
+
+#Initializing a list of files that include brood capture data
+#broodcapture_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.2015, function(folder) {
+  # List excel files and filter for files with "brood" or "broods" in the name
+  #excel_files_all <- list.files(path = folder, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
+  #file_names <- basename(excel_files_all)
+
+  #excel_files_filtered <- excel_files_all[
+    #grepl("brood", file_names, ignore.case = TRUE) |
+   #   grepl("broods", file_names, ignore.case = TRUE)
+#  ]
+#  return(excel_files_filtered)
+#}))
+
+#View list of files with "brood" in the name
+#print(broodcapture_excel_files_eider2006.2015)
+
+
+#reading and flattening brood excel files
+#read_brood_file <- function(file) {
+ # sheets <- excel_sheets(file)
+  #clean <- tolower(trimws(sheets))
+
+  #get_sheet <- function(name_pattern) {
+   # idx <- grepl(name_pattern, clean)
+    #if (!any(idx)) return(NULL)
+
+    #df <- read_excel(file, sheet = sheets[idx][1])
+
+    # Clean column names
+    #colnames(df) <- trimws(colnames(df))
+    #colnames(df) <- toupper(colnames(df))
+    #colnames(df) <- gsub("CAPTURE#", "CAPTURE #", colnames(df))
+
+    # --- Type standardization ---
+    #if ("EASTING" %in% names(df)) {
+     # df$EASTING <- as.numeric(gsub("[^0-9.-]", "", df$EASTING))
+    #}
+    #if ("NORTHING" %in% names(df)) {
+     # df$NORTHING <- as.numeric(gsub("[^0-9.-]", "", df$NORTHING))
+    #}
+    #if ("WGT" %in% names(df)) {
+     # df$WGT <- as.numeric(gsub("[^0-9.-]", "", df$WGT))
+    #}
+    #if ("CULMEN" %in% names(df)) {
+     # df$CULMEN <- as.numeric(gsub("[^0-9.-]", "", df$CULMEN))
+    #}
+    #if ("TARSUS" %in% names(df)) {
+     # df$TARSUS <- as.numeric(gsub("[^0-9.-]", "", df$TARSUS))
+    #}
+    #if ("TARSAL" %in% names(df)) {
+     # df$TARSAL <- as.character(df$TARSAL)
+    #}
+
+    #return(df)
+ # }
+
+ # list(
+    #capture = get_sheet("capture"),
+    #adult_female = get_sheet("adult"),
+    #ducklings = get_sheet("duckling"),
+    #trap_site = get_sheet("trap site")
+ # )
+#}
+
+#brood_nested <- lapply(
+  #broodcapture_excel_files_eider2006.2015,
+  #read_brood_file
+#)
+
+#capture_events <- bind_rows(lapply(brood_nested, function(x) x$capture))
+#adult_females <- bind_rows(lapply(brood_nested, function(x) x$adult_female))
+#ducklings <- bind_rows(lapply(brood_nested, function(x) x$ducklings))
+#trap_sites <- bind_rows(lapply(brood_nested, function(x) x$trap_site))
+
+#capture_events <- capture_events %>%
+  #distinct(`CAPTURE #`, .keep_all = TRUE)
+
+#trap_sites <- trap_sites %>%
+  #distinct(`CAPTURE #`, .keep_all = TRUE)
+
+#adult_females <- adult_females %>%
+ # distinct(`CAPTURE #`, .keep_all = TRUE)
+
+#duckling_summary <- ducklings %>%
+#  group_by(`CAPTURE #`) %>%
+#  summarise(
+ #   N_DUCKLINGS = n(),
+#    .groups = "drop"
+#  )
+
+#combine all brood tables
+#brood_combined_data2006.2015 <- capture_events %>%
+ # left_join(adult_females, by = "CAPTURE #") %>%
+ # left_join(duckling_summary, by = "CAPTURE #") %>%
+  #left_join(trap_sites, by = "CAPTURE #")
 
 
 ##################################
