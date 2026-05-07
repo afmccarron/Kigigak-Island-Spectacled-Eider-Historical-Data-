@@ -685,103 +685,101 @@ markdata_combined_data2006.2015 <- bind_rows(markdata_data_list2006.2015)
 #Reading brood capture data and combining it with markdata table
 #Brood capture data was not included from years 1992-2005, as any files dedicated to brood data are either corrupted, empty, or do not contain enough relevant data
 
-#Initializing a list of files that include brood capture data
-#broodcapture_excel_files_eider2006.2015 <- unlist(lapply(eider_data_folders_2006.2015, function(folder) {
-  # List excel files and filter for files with "brood" or "broods" in the name
-  #excel_files_all <- list.files(path = folder, pattern = "\\.xls[x]?$", full.names = TRUE, ignore.case = TRUE)
-  #file_names <- basename(excel_files_all)
 
-  #excel_files_filtered <- excel_files_all[
-    #grepl("brood", file_names, ignore.case = TRUE) |
-   #   grepl("broods", file_names, ignore.case = TRUE)
-#  ]
-#  return(excel_files_filtered)
-#}))
+###########
+# BROOD DATA PROCESSING
+###########
 
-#View list of files with "brood" in the name
-#print(broodcapture_excel_files_eider2006.2015)
+harmonize_types <- function(df1, df2) {
+  common <- intersect(names(df1), names(df2))
+  for (col in common) {
+    if (is.numeric(df1[[col]]) && !is.numeric(df2[[col]])) {
+      df2[[col]] <- suppressWarnings(as.numeric(df2[[col]]))
+    } else if (is.character(df1[[col]]) && !is.character(df2[[col]])) {
+      df2[[col]] <- as.character(df2[[col]])
+    }
+  }
+  list(df1, df2)
+}
 
+# Coerces all numeric-looking columns to numeric across a list of data frames
+harmonize_list <- function(df_list) {
+  # Find all column names that appear numeric in any data frame
+  all_cols <- unique(unlist(lapply(df_list, names)))
+  for (col in all_cols) {
+    has_numeric <- any(sapply(df_list, function(df) {
+      col %in% names(df) && is.numeric(df[[col]])
+    }))
+    if (has_numeric) {
+      df_list <- lapply(df_list, function(df) {
+        if (col %in% names(df) && !is.numeric(df[[col]])) {
+          df[[col]] <- suppressWarnings(as.numeric(df[[col]]))
+        }
+        df
+      })
+    }
+  }
+  df_list
+}
 
-#reading and flattening brood excel files
-#read_brood_file <- function(file) {
- # sheets <- excel_sheets(file)
-  #clean <- tolower(trimws(sheets))
+read_brood_file <- function(file) {
+  year   <- sub(".*(\\d{4}).*", "\\1", basename(dirname(file)))
+  sheets <- excel_sheets(file)
 
-  #get_sheet <- function(name_pattern) {
-   # idx <- grepl(name_pattern, clean)
-    #if (!any(idx)) return(NULL)
+  read_sheet <- function(pattern) {
+    s <- sheets[grepl(pattern, sheets, ignore.case = TRUE)][1]
+    if (is.na(s)) return(NULL)
+    df <- tryCatch(read_excel(file, sheet = s), error = function(e) NULL)
+    if (is.null(df) || nrow(df) == 0) return(NULL)
+    colnames(df) <- toupper(trimws(colnames(df)))
+    df$YEAR <- year
+    df
+  }
 
-    #df <- read_excel(file, sheet = sheets[idx][1])
+  capture <- read_sheet("capture")
+  trap    <- read_sheet("trap")
+  adults  <- read_sheet("adult")
+  ducks   <- read_sheet("duckling")
 
-    # Clean column names
-    #colnames(df) <- trimws(colnames(df))
-    #colnames(df) <- toupper(colnames(df))
-    #colnames(df) <- gsub("CAPTURE#", "CAPTURE #", colnames(df))
+  if (is.null(adults) && is.null(ducks)) {
+    single <- read_sheet(basename(file))
+    single$DATA_SOURCE <- "BROOD"
+    return(single)
+  }
 
-    # --- Type standardization ---
-    #if ("EASTING" %in% names(df)) {
-     # df$EASTING <- as.numeric(gsub("[^0-9.-]", "", df$EASTING))
-    #}
-    #if ("NORTHING" %in% names(df)) {
-     # df$NORTHING <- as.numeric(gsub("[^0-9.-]", "", df$NORTHING))
-    #}
-    #if ("WGT" %in% names(df)) {
-     # df$WGT <- as.numeric(gsub("[^0-9.-]", "", df$WGT))
-    #}
-    #if ("CULMEN" %in% names(df)) {
-     # df$CULMEN <- as.numeric(gsub("[^0-9.-]", "", df$CULMEN))
-    #}
-    #if ("TARSUS" %in% names(df)) {
-     # df$TARSUS <- as.numeric(gsub("[^0-9.-]", "", df$TARSUS))
-    #}
-    #if ("TARSAL" %in% names(df)) {
-     # df$TARSAL <- as.character(df$TARSAL)
-    #}
+  # Build event-level lookup, deduplicated on CAPTURE #
+  if (!is.null(capture) && !is.null(trap)) {
+    aligned    <- harmonize_types(capture, trap)
+    event_info <- full_join(aligned[[1]], aligned[[2]], by = intersect(names(capture), names(trap))) %>%
+      distinct(`CAPTURE #`, .keep_all = TRUE)
+  } else {
+    event_info <- if (!is.null(capture)) capture else trap
+    if (!is.null(event_info)) event_info <- distinct(event_info, `CAPTURE #`, .keep_all = TRUE)
+  }
 
-    #return(df)
- # }
+  if (!is.null(adults)) adults$AGE_CLASS <- "ADULT"
+  if (!is.null(ducks))  ducks$AGE_CLASS  <- "DUCKLING"
+  birds <- bind_rows(harmonize_list(list(adults, ducks)))
 
- # list(
-    #capture = get_sheet("capture"),
-    #adult_female = get_sheet("adult"),
-    #ducklings = get_sheet("duckling"),
-    #trap_site = get_sheet("trap site")
- # )
-#}
+  if (!is.null(event_info) && "CAPTURE #" %in% names(event_info)) {
+    new_cols <- setdiff(names(event_info), names(birds))
+    if (length(new_cols) > 0) {
+      birds <- left_join(birds,
+                         event_info %>% select(all_of(c("CAPTURE #", new_cols))),
+                         by = "CAPTURE #")
+    }
+  }
 
-#brood_nested <- lapply(
-  #broodcapture_excel_files_eider2006.2015,
-  #read_brood_file
-#)
+  birds$DATA_SOURCE <- "BROOD"
+  birds
+}
 
-#capture_events <- bind_rows(lapply(brood_nested, function(x) x$capture))
-#adult_females <- bind_rows(lapply(brood_nested, function(x) x$adult_female))
-#ducklings <- bind_rows(lapply(brood_nested, function(x) x$ducklings))
-#trap_sites <- bind_rows(lapply(brood_nested, function(x) x$trap_site))
+# Read all files, harmonize types across files before binding
+brood_results <- lapply(broodcapture_excel_files_eider2006.2015, read_brood_file)
+brood_results <- Filter(Negate(is.null), brood_results)
 
-#capture_events <- capture_events %>%
-  #distinct(`CAPTURE #`, .keep_all = TRUE)
-
-#trap_sites <- trap_sites %>%
-  #distinct(`CAPTURE #`, .keep_all = TRUE)
-
-#adult_females <- adult_females %>%
- # distinct(`CAPTURE #`, .keep_all = TRUE)
-
-#duckling_summary <- ducklings %>%
-#  group_by(`CAPTURE #`) %>%
-#  summarise(
- #   N_DUCKLINGS = n(),
-#    .groups = "drop"
-#  )
-
-#combine all brood tables
-#brood_combined_data2006.2015 <- capture_events %>%
- # left_join(adult_females, by = "CAPTURE #") %>%
- # left_join(duckling_summary, by = "CAPTURE #") %>%
-  #left_join(trap_sites, by = "CAPTURE #")
-
-
+brood_bird_data2006.2015 <- bind_rows(harmonize_list(brood_results)) %>%
+  filter(!is.na(`CAPTURE #`))
 ##################################
 #Combining all "resight" data from 2006-2015
 
